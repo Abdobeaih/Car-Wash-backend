@@ -18,14 +18,28 @@ import { HealthModule } from './health/health.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      ignoreEnvFile: process.env.NODE_ENV === 'production',
       envFilePath: [join(process.cwd(), '.env'), join(__dirname, '..', '.env')],
     }),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        uri: config.get<string>('DATABASE_URL') ?? 'mongodb://127.0.0.1:27017/mobile-car-care',
-      }),
+      useFactory: (config: ConfigService) => {
+        const uri = config.get<string>('DATABASE_URL');
+        if (process.env.NODE_ENV === 'production' && !uri) {
+          throw new Error(
+            'DATABASE_URL is not set. Add it to your hosting environment (e.g. Vercel project env).',
+          );
+        }
+        return {
+          uri: uri ?? 'mongodb://127.0.0.1:27017/mobile-car-care',
+          serverSelectionTimeoutMS: 5000,
+          connectTimeoutMS: 5000,
+          retryAttempts: 1,
+          retryDelay: 1000,
+          bufferCommands: false,
+        };
+      },
     }),
     UsersModule,
     AuthModule,

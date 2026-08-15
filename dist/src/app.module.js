@@ -30,14 +30,26 @@ exports.AppModule = AppModule = __decorate([
         imports: [
             config_1.ConfigModule.forRoot({
                 isGlobal: true,
+                ignoreEnvFile: process.env.NODE_ENV === 'production',
                 envFilePath: [(0, path_1.join)(process.cwd(), '.env'), (0, path_1.join)(__dirname, '..', '.env')],
             }),
             mongoose_1.MongooseModule.forRootAsync({
                 imports: [config_1.ConfigModule],
                 inject: [config_1.ConfigService],
-                useFactory: (config) => ({
-                    uri: config.get('DATABASE_URL') ?? 'mongodb://127.0.0.1:27017/mobile-car-care',
-                }),
+                useFactory: (config) => {
+                    const uri = config.get('DATABASE_URL');
+                    if (process.env.NODE_ENV === 'production' && !uri) {
+                        throw new Error('DATABASE_URL is not set. Add it to your hosting environment (e.g. Vercel project env).');
+                    }
+                    return {
+                        uri: uri ?? 'mongodb://127.0.0.1:27017/mobile-car-care',
+                        serverSelectionTimeoutMS: 5000,
+                        connectTimeoutMS: 5000,
+                        retryAttempts: 1,
+                        retryDelay: 1000,
+                        bufferCommands: false,
+                    };
+                },
             }),
             users_module_1.UsersModule,
             auth_module_1.AuthModule,
