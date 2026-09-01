@@ -8,7 +8,7 @@ export interface OtpEmailPayload {
 export declare class MailService {
     private readonly configService;
     private readonly logger;
-    private readonly transporter;
+    private readonly resend;
     private readonly from;
     constructor(configService: ConfigService);
     sendOtpEmail({ to, purpose, otp, expiresInMinutes }: OtpEmailPayload): Promise<void>;

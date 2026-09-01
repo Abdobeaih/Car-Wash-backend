@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createTransport, type Transporter } from 'nodemailer';
+import { Resend } from 'resend';
 import { OtpErrorCode, OtpException } from './otp-errors';
 
 export interface OtpEmailPayload {
@@ -13,35 +13,22 @@ export interface OtpEmailPayload {
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
-  private readonly transporter: Transporter | null;
+  private readonly resend: Resend | null;
   private readonly from: string;
 
   constructor(private readonly configService: ConfigService) {
-    const user = this.configService.get<string>('GMAIL_USER');
-    const pass = this.configService.get<string>('GMAIL_APP_PASSWORD');
+    const apiKey = this.configService.get<string>('RESEND_API_KEY');
     this.from =
-      this.configService.get<string>('MAIL_FROM') ?? (user ? `Mobile Car Care <${user}>` : '');
-
-    if (user && pass) {
-      const host = this.configService.get<string>('SMTP_HOST') ?? 'smtp.gmail.com';
-      const port = Number(this.configService.get<string>('SMTP_PORT') ?? 465);
-      this.transporter = createTransport({
-        host,
-        port,
-        secure: port === 465,
-        auth: { user, pass },
-      });
-    } else {
-      this.transporter = null;
-    }
+      this.configService.get<string>('MAIL_FROM') ?? 'Mobile Car Care <onboarding@resend.dev>';
+    this.resend = apiKey ? new Resend(apiKey) : null;
   }
 
   async sendOtpEmail({ to, purpose, otp, expiresInMinutes }: OtpEmailPayload): Promise<void> {
     const subject = purpose === 'reset' ? 'Reset your password' : 'Verify your email';
     const text = this.buildText(purpose, otp, expiresInMinutes);
 
-    if (!this.transporter) {
-      this.logger.warn(`Gmail credentials are not configured. Email for ${to} was not sent.`);
+    if (!this.resend) {
+      this.logger.warn('RESEND_API_KEY is not configured. Email for ' + to + ' was not sent.');
       throw new OtpException(
         OtpErrorCode.EMAIL_SEND_FAILED,
         'Unable to send the verification email. Please try again later.',
@@ -49,7 +36,7 @@ export class MailService {
     }
 
     try {
-      await this.transporter.sendMail({
+      await this.resend.emails.send({
         from: this.from,
         to,
         subject,
