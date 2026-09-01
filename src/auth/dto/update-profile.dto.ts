@@ -11,7 +11,8 @@ export class UpdateProfileDto {
   email?: string;
 
   @IsOptional()
-  @IsString()
-  @Matches(/^\+?\d{6,15}$/, { message: 'A valid phone number is required' })
+  @Matches(/^\+[1-9]\d{1,14}$/, {
+    message: 'Phone must be in international format, e.g. +14155552671',
+  })
   phone?: string;
 }
