@@ -13,6 +13,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { ContactModule } from './contact/contact.module';
 import { SeedModule } from './seed/seed.module';
 import { HealthModule } from './health/health.module';
+import { OtpModule } from './otp/otp.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { HealthModule } from './health/health.module';
     }),
     UsersModule,
     AuthModule,
+    OtpModule,
     ServicesModule,
     AddOnsModule,
     VehiclesModule,

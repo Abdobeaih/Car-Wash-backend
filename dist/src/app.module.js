@@ -22,6 +22,7 @@ const notifications_module_1 = require("./notifications/notifications.module");
 const contact_module_1 = require("./contact/contact.module");
 const seed_module_1 = require("./seed/seed.module");
 const health_module_1 = require("./health/health.module");
+const otp_module_1 = require("./otp/otp.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -53,6 +54,7 @@ exports.AppModule = AppModule = __decorate([
             }),
             users_module_1.UsersModule,
             auth_module_1.AuthModule,
+            otp_module_1.OtpModule,
             services_module_1.ServicesModule,
             addons_module_1.AddOnsModule,
             vehicles_module_1.VehiclesModule,

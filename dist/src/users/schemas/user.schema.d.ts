@@ -7,6 +7,8 @@ export declare class User {
     password: string;
     passwordResetToken?: string;
     passwordResetExpires?: Date;
+    emailVerified: boolean;
+    emailVerifiedAt?: Date;
     role: UserRole;
     createdAt?: Date;
     updatedAt?: Date;
@@ -57,6 +59,24 @@ export declare const UserSchema: import("mongoose").Schema<User, import("mongoos
         id: string;
     }>> | undefined;
     passwordResetExpires?: import("mongoose").SchemaDefinitionProperty<Date | undefined, User, import("mongoose").Document<unknown, {}, User, {
+        id: string;
+    }, import("mongoose").DefaultSchemaOptions> & Omit<User & {
+        _id: import("mongoose").Types.ObjectId;
+    } & {
+        __v: number;
+    }, "id"> & import("mongoose").HydratedDocumentOverrides<{
+        id: string;
+    }>> | undefined;
+    emailVerified?: import("mongoose").SchemaDefinitionProperty<boolean, User, import("mongoose").Document<unknown, {}, User, {
+        id: string;
+    }, import("mongoose").DefaultSchemaOptions> & Omit<User & {
+        _id: import("mongoose").Types.ObjectId;
+    } & {
+        __v: number;
+    }, "id"> & import("mongoose").HydratedDocumentOverrides<{
+        id: string;
+    }>> | undefined;
+    emailVerifiedAt?: import("mongoose").SchemaDefinitionProperty<Date | undefined, User, import("mongoose").Document<unknown, {}, User, {
         id: string;
     }, import("mongoose").DefaultSchemaOptions> & Omit<User & {
         _id: import("mongoose").Types.ObjectId;

@@ -161,9 +161,10 @@ let SeedService = SeedService_1 = class SeedService {
             .exec();
         if (existingAdmin) {
             const passwordMatches = await bcrypt.compare(adminPassword, existingAdmin.password);
-            if (existingAdmin.role !== roles_1.UserRole.ADMIN || !passwordMatches) {
+            if (existingAdmin.role !== roles_1.UserRole.ADMIN || !passwordMatches || !existingAdmin.emailVerified) {
                 existingAdmin.name = adminName;
                 existingAdmin.role = roles_1.UserRole.ADMIN;
+                existingAdmin.emailVerified = true;
                 if (!passwordMatches) {
                     existingAdmin.password = await bcrypt.hash(adminPassword, 12);
                 }
@@ -177,6 +178,7 @@ let SeedService = SeedService_1 = class SeedService {
                 email: adminEmail,
                 password: await bcrypt.hash(adminPassword, 12),
                 role: roles_1.UserRole.ADMIN,
+                emailVerified: true,
             });
             this.logger.log(`Seeded admin user: ${adminEmail}`);
         }
@@ -188,6 +190,7 @@ let SeedService = SeedService_1 = class SeedService {
                 email: customerEmail,
                 password: await bcrypt.hash(this.configService.get('SEED_CUSTOMER_PASSWORD') ?? 'CustomerPass123!', 12),
                 role: roles_1.UserRole.CUSTOMER,
+                emailVerified: true,
             });
             this.logger.log(`Seeded customer user: ${customerEmail}`);
         }

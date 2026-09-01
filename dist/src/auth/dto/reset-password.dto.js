@@ -13,7 +13,7 @@ exports.ResetPasswordDto = void 0;
 const class_validator_1 = require("class-validator");
 class ResetPasswordDto {
     email;
-    token;
+    otp;
     newPassword;
 }
 exports.ResetPasswordDto = ResetPasswordDto;
@@ -22,9 +22,9 @@ __decorate([
     __metadata("design:type", String)
 ], ResetPasswordDto.prototype, "email", void 0);
 __decorate([
-    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.Matches)(/^\d{6}$/, { message: 'The verification code must be 6 digits' }),
     __metadata("design:type", String)
-], ResetPasswordDto.prototype, "token", void 0);
+], ResetPasswordDto.prototype, "otp", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.MinLength)(8, { message: 'New password must be at least 8 characters' }),

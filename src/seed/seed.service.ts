@@ -122,9 +122,10 @@ export class SeedService implements OnApplicationBootstrap {
       .exec();
     if (existingAdmin) {
       const passwordMatches = await bcrypt.compare(adminPassword, existingAdmin.password);
-      if (existingAdmin.role !== UserRole.ADMIN || !passwordMatches) {
+      if (existingAdmin.role !== UserRole.ADMIN || !passwordMatches || !existingAdmin.emailVerified) {
         existingAdmin.name = adminName;
         existingAdmin.role = UserRole.ADMIN;
+        existingAdmin.emailVerified = true;
         if (!passwordMatches) {
           existingAdmin.password = await bcrypt.hash(adminPassword, 12);
         }
@@ -137,6 +138,7 @@ export class SeedService implements OnApplicationBootstrap {
         email: adminEmail,
         password: await bcrypt.hash(adminPassword, 12),
         role: UserRole.ADMIN,
+        emailVerified: true,
       });
       this.logger.log(`Seeded admin user: ${adminEmail}`);
     }
@@ -153,6 +155,7 @@ export class SeedService implements OnApplicationBootstrap {
           12,
         ),
         role: UserRole.CUSTOMER,
+        emailVerified: true,
       });
       this.logger.log(`Seeded customer user: ${customerEmail}`);
     }

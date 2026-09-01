@@ -10,6 +10,7 @@ export interface SafeUser {
   name: string;
   email: string;
   role: UserRole;
+  emailVerified: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -83,6 +84,19 @@ export class UsersService {
       .exec();
   }
 
+  async markEmailVerified(id: string): Promise<void> {
+    await this.userModel
+      .updateOne(
+        { _id: id },
+        { $set: { emailVerified: true, emailVerifiedAt: new Date() } },
+      )
+      .exec();
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    await this.userModel.deleteOne({ _id: id }).exec();
+  }
+
   async verifyPassword(user: UserDocument, password: string): Promise<boolean> {
     return bcrypt.compare(password, user.password);
   }
@@ -93,6 +107,7 @@ export class UsersService {
       name: user.name,
       email: user.email,
       role: user.role,
+      emailVerified: user.emailVerified,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };

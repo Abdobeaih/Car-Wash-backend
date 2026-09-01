@@ -21,6 +21,12 @@ export class User {
   @Prop({ select: false, type: Date })
   passwordResetExpires?: Date;
 
+  @Prop({ required: true, default: false })
+  emailVerified: boolean;
+
+  @Prop({ type: Date })
+  emailVerifiedAt?: Date;
+
   @Prop({ required: true, enum: UserRole, default: UserRole.CUSTOMER, type: String })
   role: UserRole;
 

@@ -1,11 +1,16 @@
 /**
- * Unit tests for the auth service (login validation is exercised at the API level).
+ * Unit tests for the auth service.
  */
 import { Test } from '@nestjs/testing';
 import { AuthService } from '../src/auth/auth.service';
 import { UsersService } from '../src/users/users.service';
+import { OtpService } from '../src/otp/otp.service';
+import { OtpPurpose } from '../src/otp/schemas/otp.schema';
 import { JwtService } from '@nestjs/jwt';
-import { UnauthorizedException } from '@nestjs/common';
+import {
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { UserRole } from '../src/common/constants/roles';
 
 describe('AuthService', () => {
@@ -16,6 +21,7 @@ describe('AuthService', () => {
     name: 'Test User',
     email: 'test@example.com',
     role: UserRole.CUSTOMER,
+    emailVerified: true,
     password: 'hashed-password',
   };
 
@@ -23,19 +29,33 @@ describe('AuthService', () => {
     findByEmail: jest.fn(),
     verifyPassword: jest.fn(),
     findById: jest.fn(),
+    findByIdWithPassword: jest.fn(),
+    create: jest.fn(),
+    updatePassword: jest.fn(),
+    markEmailVerified: jest.fn(),
+    deleteUser: jest.fn(),
   };
 
   const jwtService = {
     sign: jest.fn(() => 'signed-token'),
   };
 
+  const otpService = {
+    requestOtp: jest.fn(),
+    verifyOtp: jest.fn(),
+  };
+
   beforeEach(async () => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
+    jwtService.sign.mockReturnValue('signed-token');
+    otpService.requestOtp.mockResolvedValue(undefined);
+    otpService.verifyOtp.mockResolvedValue(undefined);
     const moduleRef = await Test.createTestingModule({
       providers: [
         AuthService,
         { provide: UsersService, useValue: usersService },
         { provide: JwtService, useValue: jwtService },
+        { provide: OtpService, useValue: otpService },
       ],
     }).compile();
 
@@ -49,6 +69,15 @@ describe('AuthService', () => {
     const result = await authService.login({ email: 'test@example.com', password: 'password123' });
     expect(result.token).toBe('signed-token');
     expect(result.user.role).toBe(UserRole.CUSTOMER);
+  });
+
+  it('rejects login for an unverified email', async () => {
+    usersService.findByEmail.mockResolvedValue({ ...userRecord, emailVerified: false });
+    usersService.verifyPassword.mockResolvedValue(true);
+
+    await expect(
+      authService.login({ email: 'test@example.com', password: 'password123' }),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
   it('rejects invalid credentials', async () => {
@@ -66,5 +95,88 @@ describe('AuthService', () => {
     await expect(
       authService.login({ email: 'nobody@example.com', password: 'password123' }),
     ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('registers a new user and sends an email verification OTP', async () => {
+    usersService.findByEmail.mockResolvedValue(null);
+    usersService.create.mockResolvedValue({ _id: 'user-1', email: 'new@example.com' });
+
+    const result = await authService.register({
+      name: 'New User',
+      email: 'new@example.com',
+      password: 'password123',
+    });
+
+    expect(otpService.requestOtp).toHaveBeenCalledWith(
+      'new@example.com',
+      OtpPurpose.EMAIL_VERIFICATION,
+    );
+    expect(result).not.toHaveProperty('token');
+  });
+
+  it('rolls back the user when the OTP email fails to send', async () => {
+    usersService.findByEmail.mockResolvedValue(null);
+    usersService.create.mockResolvedValue({ _id: 'user-1', email: 'new@example.com' });
+    otpService.requestOtp.mockRejectedValue(new Error('EMAIL_SEND_FAILED'));
+
+    await expect(
+      authService.register({
+        name: 'New User',
+        email: 'new@example.com',
+        password: 'password123',
+      }),
+    ).rejects.toThrow('EMAIL_SEND_FAILED');
+    expect(usersService.deleteUser).toHaveBeenCalledWith('user-1');
+  });
+
+  it('verifies the email and marks the user verified', async () => {
+    usersService.findByEmail.mockResolvedValue(userRecord);
+
+    const result = await authService.verifyEmail('test@example.com', '123456');
+
+    expect(otpService.verifyOtp).toHaveBeenCalledWith(
+      'test@example.com',
+      OtpPurpose.EMAIL_VERIFICATION,
+      '123456',
+    );
+    expect(usersService.markEmailVerified).toHaveBeenCalledWith('user-1');
+    expect(result.message).toContain('verified');
+  });
+
+  it('rejects email verification for an unknown user', async () => {
+    usersService.findByEmail.mockResolvedValue(null);
+
+    await expect(authService.verifyEmail('nobody@example.com', '123456')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+  });
+
+  it('forgot-password sends a reset OTP without leaking a token', async () => {
+    usersService.findByEmail.mockResolvedValue(userRecord);
+
+    const result = await authService.forgotPassword({ email: 'test@example.com' });
+
+    expect(otpService.requestOtp).toHaveBeenCalledWith(
+      'test@example.com',
+      OtpPurpose.PASSWORD_RESET,
+    );
+    expect(result).not.toHaveProperty('resetToken');
+  });
+
+  it('reset-password verifies the OTP before updating the password', async () => {
+    usersService.findByEmail.mockResolvedValue(userRecord);
+
+    await authService.resetPassword({
+      email: 'test@example.com',
+      otp: '123456',
+      newPassword: 'newpassword123',
+    });
+
+    expect(otpService.verifyOtp).toHaveBeenCalledWith(
+      'test@example.com',
+      OtpPurpose.PASSWORD_RESET,
+      '123456',
+    );
+    expect(usersService.updatePassword).toHaveBeenCalledWith('user-1', 'newpassword123');
   });
 });

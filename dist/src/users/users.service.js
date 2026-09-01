@@ -106,6 +106,14 @@ let UsersService = class UsersService {
             .updateOne({ _id: id }, { $unset: { passwordResetToken: 1, passwordResetExpires: 1 } })
             .exec();
     }
+    async markEmailVerified(id) {
+        await this.userModel
+            .updateOne({ _id: id }, { $set: { emailVerified: true, emailVerifiedAt: new Date() } })
+            .exec();
+    }
+    async deleteUser(id) {
+        await this.userModel.deleteOne({ _id: id }).exec();
+    }
     async verifyPassword(user, password) {
         return bcrypt.compare(password, user.password);
     }
@@ -115,6 +123,7 @@ let UsersService = class UsersService {
             name: user.name,
             email: user.email,
             role: user.role,
+            emailVerified: user.emailVerified,
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
         };

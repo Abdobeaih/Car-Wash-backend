@@ -1,43 +1,10 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
@@ -45,15 +12,18 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
 const jwt_1 = require("@nestjs/jwt");
-const crypto = __importStar(require("crypto"));
 const users_service_1 = require("../users/users.service");
+const otp_service_1 = require("../otp/otp.service");
+const otp_schema_1 = require("../otp/schemas/otp.schema");
 const roles_1 = require("../common/constants/roles");
 let AuthService = class AuthService {
     usersService;
     jwtService;
-    constructor(usersService, jwtService) {
+    otpService;
+    constructor(usersService, jwtService, otpService) {
         this.usersService = usersService;
         this.jwtService = jwtService;
+        this.otpService = otpService;
     }
     async register(dto) {
         const existing = await this.usersService.findByEmail(dto.email);
@@ -70,7 +40,17 @@ let AuthService = class AuthService {
             password: dto.password,
             role: roles_1.UserRole.CUSTOMER,
         });
-        return { user, token: this.signToken(user._id, user.email, user.role) };
+        try {
+            await this.otpService.requestOtp(dto.email, otp_schema_1.OtpPurpose.EMAIL_VERIFICATION);
+        }
+        catch (err) {
+            await this.usersService.deleteUser(user._id);
+            throw err;
+        }
+        return {
+            user,
+            message: 'Account created. A verification code was sent to your email. Please verify your email to log in.',
+        };
     }
     async login(dto) {
         const user = await this.usersService.findByEmail(dto.email);
@@ -81,12 +61,16 @@ let AuthService = class AuthService {
         if (!valid) {
             throw new common_1.UnauthorizedException('Invalid email or password.');
         }
+        if (!user.emailVerified) {
+            throw new common_1.UnauthorizedException('Please verify your email before logging in. Check your inbox for a verification code.');
+        }
         return {
             user: {
                 _id: user._id.toString(),
                 name: user.name,
                 email: user.email,
                 role: user.role,
+                emailVerified: true,
             },
             token: this.signToken(user._id.toString(), user.email, user.role),
         };
@@ -135,40 +119,48 @@ let AuthService = class AuthService {
         if (!user) {
             return {
                 message: 'If an account exists for this email, a reset code will be provided.',
-                resetToken: null,
             };
         }
-        const resetToken = crypto.randomBytes(32).toString('hex');
-        const tokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
-        const expires = new Date(Date.now() + 60 * 60 * 1000);
-        await this.usersService.setPasswordReset(user._id.toString(), tokenHash, expires);
+        await this.otpService.requestOtp(dto.email, otp_schema_1.OtpPurpose.PASSWORD_RESET);
         return {
-            message: 'A password reset code was generated. (No email service is configured, so the code is returned below.)',
-            resetToken,
-            expiresInMinutes: 60,
+            message: 'If an account exists for this email, a reset code will be provided.',
         };
     }
     async resetPassword(dto) {
         const user = await this.usersService.findByEmail(dto.email);
-        if (!user || !user.passwordResetToken || !user.passwordResetExpires) {
+        if (!user) {
             throw new common_1.BadRequestException('No active password reset request for this email.');
         }
-        if (user.passwordResetExpires.getTime() < Date.now()) {
-            throw new common_1.BadRequestException('This password reset code has expired. Please request a new one.');
-        }
-        const tokenHash = crypto.createHash('sha256').update(dto.token).digest('hex');
-        if (tokenHash !== user.passwordResetToken) {
-            throw new common_1.BadRequestException('Invalid password reset code.');
-        }
+        await this.otpService.verifyOtp(dto.email, otp_schema_1.OtpPurpose.PASSWORD_RESET, dto.otp);
         await this.usersService.updatePassword(user._id.toString(), dto.newPassword);
-        await this.usersService.clearPasswordReset(user._id.toString());
         return { message: 'Password reset successfully. You can now log in.' };
+    }
+    async verifyEmail(email, otp) {
+        const user = await this.usersService.findByEmail(email);
+        if (!user) {
+            throw new common_1.NotFoundException('User not found.');
+        }
+        await this.otpService.verifyOtp(email, otp_schema_1.OtpPurpose.EMAIL_VERIFICATION, otp);
+        await this.usersService.markEmailVerified(user._id.toString());
+        return { message: 'Email verified successfully. You can now log in.' };
+    }
+    async resendVerificationOtp(email) {
+        const user = await this.usersService.findByEmail(email);
+        if (!user) {
+            throw new common_1.NotFoundException('User not found.');
+        }
+        if (user.emailVerified) {
+            throw new common_1.BadRequestException('This email is already verified.');
+        }
+        await this.otpService.requestOtp(email, otp_schema_1.OtpPurpose.EMAIL_VERIFICATION);
+        return { message: 'A new verification code has been sent.' };
     }
 };
 exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [users_service_1.UsersService,
-        jwt_1.JwtService])
+        jwt_1.JwtService,
+        otp_service_1.OtpService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

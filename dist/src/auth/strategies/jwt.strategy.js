@@ -35,6 +35,9 @@ let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(pas
         if (!user) {
             throw new common_1.UnauthorizedException('Account no longer exists.');
         }
+        if (!user.emailVerified) {
+            throw new common_1.UnauthorizedException('Your email is not verified. Please verify your email to continue.');
+        }
         return {
             id: user._id.toString(),
             email: user.email,

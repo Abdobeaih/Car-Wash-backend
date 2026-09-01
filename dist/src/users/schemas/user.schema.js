@@ -18,6 +18,8 @@ let User = class User {
     password;
     passwordResetToken;
     passwordResetExpires;
+    emailVerified;
+    emailVerifiedAt;
     role;
     createdAt;
     updatedAt;
@@ -43,6 +45,14 @@ __decorate([
     (0, mongoose_1.Prop)({ select: false, type: Date }),
     __metadata("design:type", Date)
 ], User.prototype, "passwordResetExpires", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ required: true, default: false }),
+    __metadata("design:type", Boolean)
+], User.prototype, "emailVerified", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ type: Date }),
+    __metadata("design:type", Date)
+], User.prototype, "emailVerifiedAt", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ required: true, enum: roles_1.UserRole, default: roles_1.UserRole.CUSTOMER, type: String }),
     __metadata("design:type", String)

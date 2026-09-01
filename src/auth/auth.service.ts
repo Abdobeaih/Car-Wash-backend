@@ -5,8 +5,9 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import * as crypto from 'crypto';
 import { UsersService } from '../users/users.service';
+import { OtpService } from '../otp/otp.service';
+import { OtpPurpose } from '../otp/schemas/otp.schema';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -20,6 +21,7 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
+    private readonly otpService: OtpService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -40,7 +42,18 @@ export class AuthService {
       role: UserRole.CUSTOMER,
     });
 
-    return { user, token: this.signToken(user._id, user.email, user.role) };
+    try {
+      await this.otpService.requestOtp(dto.email, OtpPurpose.EMAIL_VERIFICATION);
+    } catch (err) {
+      await this.usersService.deleteUser(user._id);
+      throw err;
+    }
+
+    return {
+      user,
+      message:
+        'Account created. A verification code was sent to your email. Please verify your email to log in.',
+    };
   }
 
   async login(dto: LoginDto) {
@@ -54,12 +67,19 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password.');
     }
 
+    if (!user.emailVerified) {
+      throw new UnauthorizedException(
+        'Please verify your email before logging in. Check your inbox for a verification code.',
+      );
+    }
+
     return {
       user: {
         _id: user._id.toString(),
         name: user.name,
         email: user.email,
         role: user.role,
+        emailVerified: true,
       },
       token: this.signToken(user._id.toString(), user.email, user.role),
     };
@@ -113,37 +133,43 @@ export class AuthService {
     if (!user) {
       return {
         message: 'If an account exists for this email, a reset code will be provided.',
-        resetToken: null,
       };
     }
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    const tokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
-    const expires = new Date(Date.now() + 60 * 60 * 1000);
-    await this.usersService.setPasswordReset(user._id.toString(), tokenHash, expires);
+    await this.otpService.requestOtp(dto.email, OtpPurpose.PASSWORD_RESET);
     return {
-      message:
-        'A password reset code was generated. (No email service is configured, so the code is returned below.)',
-      resetToken,
-      expiresInMinutes: 60,
+      message: 'If an account exists for this email, a reset code will be provided.',
     };
   }
 
   async resetPassword(dto: ResetPasswordDto) {
     const user = await this.usersService.findByEmail(dto.email);
-    if (!user || !user.passwordResetToken || !user.passwordResetExpires) {
+    if (!user) {
       throw new BadRequestException('No active password reset request for this email.');
     }
-    if (user.passwordResetExpires.getTime() < Date.now()) {
-      throw new BadRequestException(
-        'This password reset code has expired. Please request a new one.',
-      );
-    }
-    const tokenHash = crypto.createHash('sha256').update(dto.token).digest('hex');
-    if (tokenHash !== user.passwordResetToken) {
-      throw new BadRequestException('Invalid password reset code.');
-    }
+    await this.otpService.verifyOtp(dto.email, OtpPurpose.PASSWORD_RESET, dto.otp);
     await this.usersService.updatePassword(user._id.toString(), dto.newPassword);
-    await this.usersService.clearPasswordReset(user._id.toString());
     return { message: 'Password reset successfully. You can now log in.' };
+  }
+
+  async verifyEmail(email: string, otp: string) {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      throw new NotFoundException('User not found.');
+    }
+    await this.otpService.verifyOtp(email, OtpPurpose.EMAIL_VERIFICATION, otp);
+    await this.usersService.markEmailVerified(user._id.toString());
+    return { message: 'Email verified successfully. You can now log in.' };
+  }
+
+  async resendVerificationOtp(email: string) {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      throw new NotFoundException('User not found.');
+    }
+    if (user.emailVerified) {
+      throw new BadRequestException('This email is already verified.');
+    }
+    await this.otpService.requestOtp(email, OtpPurpose.EMAIL_VERIFICATION);
+    return { message: 'A new verification code has been sent.' };
   }
 }
