@@ -8,6 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var _a, _b, _c, _d;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.OtpSchema = exports.Otp = exports.OtpPurpose = void 0;
 const mongoose_1 = require("@nestjs/mongoose");
@@ -45,7 +46,7 @@ __decorate([
 ], Otp.prototype, "otpHash", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ required: true, type: Date }),
-    __metadata("design:type", Date)
+    __metadata("design:type", typeof (_a = typeof Date !== "undefined" && Date) === "function" ? _a : Object)
 ], Otp.prototype, "expiresAt", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ required: true, default: 0 }),
@@ -61,15 +62,15 @@ __decorate([
 ], Otp.prototype, "requestCount", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ required: true, type: Date }),
-    __metadata("design:type", Date)
+    __metadata("design:type", typeof (_b = typeof Date !== "undefined" && Date) === "function" ? _b : Object)
 ], Otp.prototype, "rateWindowStart", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ required: true, type: Date }),
-    __metadata("design:type", Date)
+    __metadata("design:type", typeof (_c = typeof Date !== "undefined" && Date) === "function" ? _c : Object)
 ], Otp.prototype, "lastRequestAt", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ type: Date }),
-    __metadata("design:type", Date)
+    __metadata("design:type", typeof (_d = typeof Date !== "undefined" && Date) === "function" ? _d : Object)
 ], Otp.prototype, "usedAt", void 0);
 exports.Otp = Otp = __decorate([
     (0, mongoose_1.Schema)({ timestamps: true })

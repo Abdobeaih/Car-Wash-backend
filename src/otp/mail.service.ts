@@ -18,19 +18,17 @@ export class MailService {
 
   constructor(private readonly configService: ConfigService) {
     const apiKey = this.configService.get<string>('RESEND_API_KEY');
-    this.from = this.configService.get<string>('MAIL_FROM') ?? 'Mobile Car Care <onboarding@resend.dev>';
+    this.from =
+      this.configService.get<string>('MAIL_FROM') ?? 'Mobile Car Care <onboarding@resend.dev>';
     this.resend = apiKey ? new Resend(apiKey) : null;
   }
 
   async sendOtpEmail({ to, purpose, otp, expiresInMinutes }: OtpEmailPayload): Promise<void> {
-    const subject =
-      purpose === 'reset' ? 'Reset your password' : 'Verify your email';
+    const subject = purpose === 'reset' ? 'Reset your password' : 'Verify your email';
     const text = this.buildText(purpose, otp, expiresInMinutes);
 
     if (!this.resend) {
-      this.logger.warn(
-        `RESEND_API_KEY is not configured. Email for ${to} was not sent.`,
-      );
+      this.logger.warn(`RESEND_API_KEY is not configured. Email for ${to} was not sent.`);
       throw new OtpException(
         OtpErrorCode.EMAIL_SEND_FAILED,
         'Unable to send the verification email. Please try again later.',

@@ -45,6 +45,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
 var SeedService_1;
+var _a, _b, _c, _d;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SeedService = void 0;
 const common_1 = require("@nestjs/common");
@@ -161,7 +162,9 @@ let SeedService = SeedService_1 = class SeedService {
             .exec();
         if (existingAdmin) {
             const passwordMatches = await bcrypt.compare(adminPassword, existingAdmin.password);
-            if (existingAdmin.role !== roles_1.UserRole.ADMIN || !passwordMatches || !existingAdmin.emailVerified) {
+            if (existingAdmin.role !== roles_1.UserRole.ADMIN ||
+                !passwordMatches ||
+                !existingAdmin.emailVerified) {
                 existingAdmin.name = adminName;
                 existingAdmin.role = roles_1.UserRole.ADMIN;
                 existingAdmin.emailVerified = true;
@@ -202,9 +205,6 @@ exports.SeedService = SeedService = SeedService_1 = __decorate([
     __param(0, (0, mongoose_1.InjectModel)(user_schema_1.User.name)),
     __param(1, (0, mongoose_1.InjectModel)(service_schema_1.CarService.name)),
     __param(2, (0, mongoose_1.InjectModel)(addon_schema_1.AddOn.name)),
-    __metadata("design:paramtypes", [mongoose_2.Model,
-        mongoose_2.Model,
-        mongoose_2.Model,
-        config_1.ConfigService])
+    __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _a : Object, typeof (_b = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _b : Object, typeof (_c = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _c : Object, typeof (_d = typeof config_1.ConfigService !== "undefined" && config_1.ConfigService) === "function" ? _d : Object])
 ], SeedService);
 //# sourceMappingURL=seed.service.js.map

@@ -122,7 +122,11 @@ export class SeedService implements OnApplicationBootstrap {
       .exec();
     if (existingAdmin) {
       const passwordMatches = await bcrypt.compare(adminPassword, existingAdmin.password);
-      if (existingAdmin.role !== UserRole.ADMIN || !passwordMatches || !existingAdmin.emailVerified) {
+      if (
+        existingAdmin.role !== UserRole.ADMIN ||
+        !passwordMatches ||
+        !existingAdmin.emailVerified
+      ) {
         existingAdmin.name = adminName;
         existingAdmin.role = UserRole.ADMIN;
         existingAdmin.emailVerified = true;

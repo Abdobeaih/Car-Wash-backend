@@ -86,10 +86,7 @@ export class UsersService {
 
   async markEmailVerified(id: string): Promise<void> {
     await this.userModel
-      .updateOne(
-        { _id: id },
-        { $set: { emailVerified: true, emailVerifiedAt: new Date() } },
-      )
+      .updateOne({ _id: id }, { $set: { emailVerified: true, emailVerifiedAt: new Date() } })
       .exec();
   }
 

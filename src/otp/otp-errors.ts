@@ -12,10 +12,10 @@ export enum OtpErrorCode {
 }
 
 export class OtpException extends HttpException {
-  constructor(readonly code: OtpErrorCode, message: string) {
-    super(
-      { statusCode: HttpStatus.BAD_REQUEST, message, otpCode: code },
-      HttpStatus.BAD_REQUEST,
-    );
+  constructor(
+    readonly code: OtpErrorCode,
+    message: string,
+  ) {
+    super({ statusCode: HttpStatus.BAD_REQUEST, message, otpCode: code }, HttpStatus.BAD_REQUEST);
   }
 }

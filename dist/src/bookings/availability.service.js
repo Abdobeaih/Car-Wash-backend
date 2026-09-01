@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var _a, _b;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AvailabilityService = void 0;
 const common_1 = require("@nestjs/common");
@@ -78,8 +79,7 @@ exports.AvailabilityService = AvailabilityService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, mongoose_1.InjectModel)(service_schema_1.CarService.name)),
     __param(1, (0, mongoose_1.InjectModel)(booking_schema_1.Booking.name)),
-    __metadata("design:paramtypes", [mongoose_2.Model,
-        mongoose_2.Model])
+    __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _a : Object, typeof (_b = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _b : Object])
 ], AvailabilityService);
 function toMinutes(time) {
     const [h, m] = time.split(':').map(Number);

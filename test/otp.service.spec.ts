@@ -34,12 +34,6 @@ describe('OtpService', () => {
     return doc;
   };
 
-  const chainExec = (value: unknown) => ({
-    findOne: jest.fn().mockReturnThis(),
-    sort: jest.fn().mockReturnThis(),
-    exec: jest.fn().mockResolvedValue(value),
-  });
-
   let otpModel: {
     findOne: jest.Mock;
     create: jest.Mock;
@@ -71,7 +65,9 @@ describe('OtpService', () => {
   });
 
   it('generates a secure hashed OTP and emails it', async () => {
-    otpModel.findOne.mockReturnValue({ sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }) });
+    otpModel.findOne.mockReturnValue({
+      sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
+    });
     otpModel.create.mockImplementation((data) => makeDoc(data));
 
     await otpService.requestOtp('test@example.com', OtpPurpose.EMAIL_VERIFICATION);
@@ -91,7 +87,9 @@ describe('OtpService', () => {
 
   it('rejects a resend within the 60s cooldown', async () => {
     const existing = makeDoc({ lastRequestAt: new Date(Date.now() - 10 * 1000) });
-    otpModel.findOne.mockReturnValue({ sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(existing) }) });
+    otpModel.findOne.mockReturnValue({
+      sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(existing) }),
+    });
 
     await expect(
       otpService.requestOtp('test@example.com', OtpPurpose.EMAIL_VERIFICATION),
@@ -104,7 +102,9 @@ describe('OtpService', () => {
       lastRequestAt: new Date(Date.now() - 2 * 60 * 1000),
       rateWindowStart: new Date(Date.now() - 2 * 60 * 1000),
     });
-    otpModel.findOne.mockReturnValue({ sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(existing) }) });
+    otpModel.findOne.mockReturnValue({
+      sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(existing) }),
+    });
 
     await expect(
       otpService.requestOtp('test@example.com', OtpPurpose.EMAIL_VERIFICATION),
@@ -117,7 +117,9 @@ describe('OtpService', () => {
       lastRequestAt: new Date(Date.now() - 2 * 60 * 1000),
       rateWindowStart: new Date(Date.now() - 2 * 60 * 1000),
     });
-    otpModel.findOne.mockReturnValue({ sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(existing) }) });
+    otpModel.findOne.mockReturnValue({
+      sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(existing) }),
+    });
     otpModel.create.mockImplementation((data) => makeDoc(data));
 
     await otpService.requestOtp('test@example.com', OtpPurpose.EMAIL_VERIFICATION);
@@ -129,7 +131,9 @@ describe('OtpService', () => {
   it('verifies a correct OTP and marks it used', async () => {
     const hash = await bcrypt.hash('123456', 10);
     const record = makeDoc({ otpHash: hash });
-    otpModel.findOne.mockReturnValue({ sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(record) }) });
+    otpModel.findOne.mockReturnValue({
+      sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(record) }),
+    });
 
     await otpService.verifyOtp('test@example.com', OtpPurpose.EMAIL_VERIFICATION, '123456');
 
@@ -140,7 +144,9 @@ describe('OtpService', () => {
   it('rejects a wrong OTP and increments attempts', async () => {
     const hash = await bcrypt.hash('123456', 10);
     const record = makeDoc({ otpHash: hash, attempts: 2 });
-    otpModel.findOne.mockReturnValue({ sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(record) }) });
+    otpModel.findOne.mockReturnValue({
+      sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(record) }),
+    });
 
     await expect(
       otpService.verifyOtp('test@example.com', OtpPurpose.EMAIL_VERIFICATION, '000000'),
@@ -151,7 +157,9 @@ describe('OtpService', () => {
   it('rejects an expired OTP', async () => {
     const hash = await bcrypt.hash('123456', 10);
     const record = makeDoc({ otpHash: hash, expiresAt: new Date(Date.now() - 1000) });
-    otpModel.findOne.mockReturnValue({ sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(record) }) });
+    otpModel.findOne.mockReturnValue({
+      sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(record) }),
+    });
 
     await expect(
       otpService.verifyOtp('test@example.com', OtpPurpose.EMAIL_VERIFICATION, '123456'),
@@ -161,7 +169,9 @@ describe('OtpService', () => {
   it('rejects an already-used OTP', async () => {
     const hash = await bcrypt.hash('123456', 10);
     const record = makeDoc({ otpHash: hash, used: true });
-    otpModel.findOne.mockReturnValue({ sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(record) }) });
+    otpModel.findOne.mockReturnValue({
+      sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(record) }),
+    });
 
     await expect(
       otpService.verifyOtp('test@example.com', OtpPurpose.EMAIL_VERIFICATION, '123456'),
@@ -171,7 +181,9 @@ describe('OtpService', () => {
   it('rejects an OTP after the max attempts limit is reached', async () => {
     const hash = await bcrypt.hash('123456', 10);
     const record = makeDoc({ otpHash: hash, attempts: 5 });
-    otpModel.findOne.mockReturnValue({ sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(record) }) });
+    otpModel.findOne.mockReturnValue({
+      sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(record) }),
+    });
 
     await expect(
       otpService.verifyOtp('test@example.com', OtpPurpose.EMAIL_VERIFICATION, '123456'),
@@ -179,9 +191,13 @@ describe('OtpService', () => {
   });
 
   it('throws EMAIL_SEND_FAILED when the email cannot be sent', async () => {
-    otpModel.findOne.mockReturnValue({ sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }) });
+    otpModel.findOne.mockReturnValue({
+      sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
+    });
     otpModel.create.mockImplementation((data) => makeDoc(data));
-    mailService.sendOtpEmail.mockRejectedValue(new OtpException(OtpErrorCode.EMAIL_SEND_FAILED, 'x'));
+    mailService.sendOtpEmail.mockRejectedValue(
+      new OtpException(OtpErrorCode.EMAIL_SEND_FAILED, 'x'),
+    );
 
     await expect(
       otpService.requestOtp('test@example.com', OtpPurpose.EMAIL_VERIFICATION),

@@ -8,6 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var _a, _b;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserSchema = exports.User = void 0;
 const mongoose_1 = require("@nestjs/mongoose");
@@ -43,7 +44,7 @@ __decorate([
 ], User.prototype, "passwordResetToken", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ select: false, type: Date }),
-    __metadata("design:type", Date)
+    __metadata("design:type", typeof (_a = typeof Date !== "undefined" && Date) === "function" ? _a : Object)
 ], User.prototype, "passwordResetExpires", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ required: true, default: false }),
@@ -51,7 +52,7 @@ __decorate([
 ], User.prototype, "emailVerified", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ type: Date }),
-    __metadata("design:type", Date)
+    __metadata("design:type", typeof (_b = typeof Date !== "undefined" && Date) === "function" ? _b : Object)
 ], User.prototype, "emailVerifiedAt", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ required: true, enum: roles_1.UserRole, default: roles_1.UserRole.CUSTOMER, type: String }),

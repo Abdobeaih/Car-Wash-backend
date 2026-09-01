@@ -9,6 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 var MailService_1;
+var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MailService = void 0;
 const common_1 = require("@nestjs/common");
@@ -23,7 +24,8 @@ let MailService = MailService_1 = class MailService {
     constructor(configService) {
         this.configService = configService;
         const apiKey = this.configService.get('RESEND_API_KEY');
-        this.from = this.configService.get('MAIL_FROM') ?? 'Mobile Car Care <onboarding@resend.dev>';
+        this.from =
+            this.configService.get('MAIL_FROM') ?? 'Mobile Car Care <onboarding@resend.dev>';
         this.resend = apiKey ? new resend_1.Resend(apiKey) : null;
     }
     async sendOtpEmail({ to, purpose, otp, expiresInMinutes }) {
@@ -63,6 +65,6 @@ let MailService = MailService_1 = class MailService {
 exports.MailService = MailService;
 exports.MailService = MailService = MailService_1 = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [config_1.ConfigService])
+    __metadata("design:paramtypes", [typeof (_a = typeof config_1.ConfigService !== "undefined" && config_1.ConfigService) === "function" ? _a : Object])
 ], MailService);
 //# sourceMappingURL=mail.service.js.map

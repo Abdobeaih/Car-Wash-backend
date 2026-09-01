@@ -8,7 +8,6 @@ import { MailService } from './mail.service';
 import { OtpErrorCode, OtpException } from './otp-errors';
 import {
   OTP_EXPIRY_MS,
-  OTP_LENGTH,
   OTP_MAX_ATTEMPTS,
   OTP_MAX_REQUESTS,
   OTP_RATE_WINDOW_MS,
@@ -62,12 +61,14 @@ export class OtpService {
       expiresAt,
       attempts: 0,
       used: false,
-      requestCount: latest && now - latest.rateWindowStart.getTime() < OTP_RATE_WINDOW_MS
-        ? latest.requestCount + 1
-        : 1,
-      rateWindowStart: latest && now - latest.rateWindowStart.getTime() < OTP_RATE_WINDOW_MS
-        ? latest.rateWindowStart
-        : new Date(now),
+      requestCount:
+        latest && now - latest.rateWindowStart.getTime() < OTP_RATE_WINDOW_MS
+          ? latest.requestCount + 1
+          : 1,
+      rateWindowStart:
+        latest && now - latest.rateWindowStart.getTime() < OTP_RATE_WINDOW_MS
+          ? latest.rateWindowStart
+          : new Date(now),
       lastRequestAt: new Date(now),
     });
 
@@ -94,10 +95,7 @@ export class OtpService {
     }
 
     if (record.expiresAt.getTime() < Date.now()) {
-      throw new OtpException(
-        OtpErrorCode.EXPIRED,
-        'This code has expired. Request a new one.',
-      );
+      throw new OtpException(OtpErrorCode.EXPIRED, 'This code has expired. Request a new one.');
     }
 
     if (record.attempts >= OTP_MAX_ATTEMPTS) {
@@ -126,9 +124,6 @@ export class OtpService {
   }
 
   private findLatest(email: string, purpose: OtpPurpose): Promise<OtpDocument | null> {
-    return this.otpModel
-      .findOne({ email, purpose })
-      .sort({ createdAt: -1 })
-      .exec();
+    return this.otpModel.findOne({ email, purpose }).sort({ createdAt: -1 }).exec();
   }
 }

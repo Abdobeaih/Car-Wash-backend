@@ -7,10 +7,7 @@ import { UsersService } from '../src/users/users.service';
 import { OtpService } from '../src/otp/otp.service';
 import { OtpPurpose } from '../src/otp/schemas/otp.schema';
 import { JwtService } from '@nestjs/jwt';
-import {
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { UserRole } from '../src/common/constants/roles';
 
 describe('AuthService', () => {

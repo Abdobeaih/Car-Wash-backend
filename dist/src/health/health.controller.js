@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.HealthController = void 0;
 const common_1 = require("@nestjs/common");
@@ -40,6 +41,6 @@ __decorate([
 exports.HealthController = HealthController = __decorate([
     (0, common_1.Controller)('health'),
     __param(0, (0, mongoose_1.InjectConnection)()),
-    __metadata("design:paramtypes", [mongoose_2.Connection])
+    __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Connection !== "undefined" && mongoose_2.Connection) === "function" ? _a : Object])
 ], HealthController);
 //# sourceMappingURL=health.controller.js.map

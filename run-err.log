@@ -1,23 +1,136 @@
-[31m[Nest] 24956  - [39m١٥‏/٠٨‏/٢٠٢٦، ٤:١٧:٢٣ ص [31m  ERROR[39m [38;5;3m[NestApplication] [39m[31mError: listen EADDRINUSE: address already in use :::3001[39m[38;5;3m +4ms[39m
-node:net:1948
-    const ex = new UVExceptionWithHostPort(err, 'listen', address, port);
-               ^
-
-Error: listen EADDRINUSE: address already in use :::3001
-    at Server.setupListenHandle [as _listen2] (node:net:1948:16)
-    at listenInCluster (node:net:2005:12)
-    at Server.listen (node:net:2110:7)
-    at ExpressAdapter.listen (C:\Users\mohey\OneDrive\Desktop\Car-Wash\node_modules\@nestjs\platform-express\adapters\express-adapter.js:115:32)
-    at C:\Users\mohey\OneDrive\Desktop\Car-Wash\node_modules\@nestjs\core\nest-application.js:190:30
-    at new Promise (<anonymous>)
-    at NestApplication.listen (C:\Users\mohey\OneDrive\Desktop\Car-Wash\node_modules\@nestjs\core\nest-application.js:180:16)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-    at async bootstrap (C:\Users\mohey\OneDrive\Desktop\Car-Wash\apps\api\src\bootstrap.ts:61:3) {
-  code: 'EADDRINUSE',
-  errno: -4091,
-  syscall: 'listen',
-  address: '::',
-  port: 3001
+[31m[Nest] 17572  - [39m٠١‏/٠٩‏/٢٠٢٦، ١٢:١٩:٥٢ م [31m  ERROR[39m [38;5;3m[MongooseModule] [39m[31mUnable to connect to the database. Retrying (1)...[39m
+MongooseServerSelectionError: connect ECONNREFUSED 127.0.0.1:27017
+    at _handleConnectionErrors (E:\api\Car-Wash-backend\node_modules\mongoose\lib\connection.js:1175:11)
+    at NativeConnection.asPromise (E:\api\Car-Wash-backend\node_modules\mongoose\lib\connection.js:1638:11)
+    at async E:\api\Car-Wash-backend\node_modules\@nestjs\mongoose\dist\mongoose-core.module.js:65:112
+[31m[Nest] 17572  - [39m٠١‏/٠٩‏/٢٠٢٦، ١٢:١٩:٥٢ م [31m  ERROR[39m [38;5;3m[ExceptionHandler] [39mMongooseServerSelectionError: connect ECONNREFUSED 127.0.0.1:27017
+    at _handleConnectionErrors [90m(E:\api\Car-Wash-backend\[39mnode_modules\[4mmongoose[24m\lib\connection.js:1175:11[90m)[39m
+    at NativeConnection.asPromise [90m(E:\api\Car-Wash-backend\[39mnode_modules\[4mmongoose[24m\lib\connection.js:1638:11[90m)[39m
+    at async [90mE:\api\Car-Wash-backend\[39mnode_modules\[4m@nestjs\mongoose[24m\dist\mongoose-core.module.js:65:112 {
+  errorLabelSet: Set(0) {},
+  reason: TopologyDescription {
+    type: [32m'Unknown'[39m,
+    servers: Map(1) {
+      [32m'127.0.0.1:27017'[39m => ServerDescription {
+        address: [32m'127.0.0.1:27017'[39m,
+        type: [32m'Unknown'[39m,
+        hosts: [],
+        passives: [],
+        arbiters: [],
+        tags: {},
+        minWireVersion: [33m0[39m,
+        maxWireVersion: [33m0[39m,
+        roundTripTime: [33m-1[39m,
+        minRoundTripTime: [33m0[39m,
+        lastUpdateTime: [33m52717[39m,
+        lastWriteDate: [33m0[39m,
+        error: MongoNetworkError: connect ECONNREFUSED 127.0.0.1:27017
+            at Socket.<anonymous> [90m(E:\api\Car-Wash-backend\[39mnode_modules\[4mmongodb[24m\lib\cmap\connect.js:314:44[90m)[39m
+        [90m    at Socket.wrapper (node:events:639:12)[39m
+        [90m    at Socket.emit (node:events:514:28)[39m
+        [90m    at emitErrorNT (node:internal/streams/destroy:170:8)[39m
+        [90m    at emitErrorCloseNT (node:internal/streams/destroy:129:3)[39m
+        [90m    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)[39m {
+          errorLabelSet: Set(3) {
+            [32m'SystemOverloadedError'[39m,
+            [32m'RetryableError'[39m,
+            [32m'ResetPool'[39m
+          },
+          beforeHandshake: [33mfalse[39m,
+          [cause]: Error: connect ECONNREFUSED 127.0.0.1:27017
+          [90m    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:2017:16)[39m {
+            errno: [33m-4078[39m,
+            code: [32m'ECONNREFUSED'[39m,
+            syscall: [32m'connect'[39m,
+            address: [32m'127.0.0.1'[39m,
+            port: [33m27017[39m
+          }
+        },
+        topologyVersion: [1mnull[22m,
+        setName: [1mnull[22m,
+        setVersion: [1mnull[22m,
+        electionId: [1mnull[22m,
+        logicalSessionTimeoutMinutes: [1mnull[22m,
+        maxMessageSizeBytes: [1mnull[22m,
+        maxWriteBatchSize: [1mnull[22m,
+        maxBsonObjectSize: [1mnull[22m,
+        primary: [1mnull[22m,
+        me: [1mnull[22m,
+        [32m'$clusterTime'[39m: [1mnull[22m,
+        iscryptd: [33mfalse[39m
+      }
+    },
+    stale: [33mfalse[39m,
+    compatible: [33mtrue[39m,
+    heartbeatFrequencyMS: [33m10000[39m,
+    localThresholdMS: [33m15[39m,
+    setName: [1mnull[22m,
+    maxElectionId: [1mnull[22m,
+    maxSetVersion: [1mnull[22m,
+    commonWireVersion: [33m0[39m,
+    logicalSessionTimeoutMinutes: [1mnull[22m
+  },
+  code: [90mundefined[39m,
+  cause: TopologyDescription {
+    type: [32m'Unknown'[39m,
+    servers: Map(1) {
+      [32m'127.0.0.1:27017'[39m => ServerDescription {
+        address: [32m'127.0.0.1:27017'[39m,
+        type: [32m'Unknown'[39m,
+        hosts: [],
+        passives: [],
+        arbiters: [],
+        tags: {},
+        minWireVersion: [33m0[39m,
+        maxWireVersion: [33m0[39m,
+        roundTripTime: [33m-1[39m,
+        minRoundTripTime: [33m0[39m,
+        lastUpdateTime: [33m52717[39m,
+        lastWriteDate: [33m0[39m,
+        error: MongoNetworkError: connect ECONNREFUSED 127.0.0.1:27017
+            at Socket.<anonymous> [90m(E:\api\Car-Wash-backend\[39mnode_modules\[4mmongodb[24m\lib\cmap\connect.js:314:44[90m)[39m
+        [90m    at Socket.wrapper (node:events:639:12)[39m
+        [90m    at Socket.emit (node:events:514:28)[39m
+        [90m    at emitErrorNT (node:internal/streams/destroy:170:8)[39m
+        [90m    at emitErrorCloseNT (node:internal/streams/destroy:129:3)[39m
+        [90m    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)[39m {
+          errorLabelSet: Set(3) {
+            [32m'SystemOverloadedError'[39m,
+            [32m'RetryableError'[39m,
+            [32m'ResetPool'[39m
+          },
+          beforeHandshake: [33mfalse[39m,
+          [cause]: Error: connect ECONNREFUSED 127.0.0.1:27017
+          [90m    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:2017:16)[39m {
+            errno: [33m-4078[39m,
+            code: [32m'ECONNREFUSED'[39m,
+            syscall: [32m'connect'[39m,
+            address: [32m'127.0.0.1'[39m,
+            port: [33m27017[39m
+          }
+        },
+        topologyVersion: [1mnull[22m,
+        setName: [1mnull[22m,
+        setVersion: [1mnull[22m,
+        electionId: [1mnull[22m,
+        logicalSessionTimeoutMinutes: [1mnull[22m,
+        maxMessageSizeBytes: [1mnull[22m,
+        maxWriteBatchSize: [1mnull[22m,
+        maxBsonObjectSize: [1mnull[22m,
+        primary: [1mnull[22m,
+        me: [1mnull[22m,
+        [32m'$clusterTime'[39m: [1mnull[22m,
+        iscryptd: [33mfalse[39m
+      }
+    },
+    stale: [33mfalse[39m,
+    compatible: [33mtrue[39m,
+    heartbeatFrequencyMS: [33m10000[39m,
+    localThresholdMS: [33m15[39m,
+    setName: [1mnull[22m,
+    maxElectionId: [1mnull[22m,
+    maxSetVersion: [1mnull[22m,
+    commonWireVersion: [33m0[39m,
+    logicalSessionTimeoutMinutes: [1mnull[22m
+  }
 }
-
-Node.js v24.14.0
