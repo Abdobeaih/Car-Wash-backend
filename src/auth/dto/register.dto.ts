@@ -1,4 +1,4 @@
-import { IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsEnum, IsOptional, IsString, Matches, MinLength } from 'class-validator';
 import { UserRole } from '../../common/constants/roles';
 
 export class RegisterDto {
@@ -16,4 +16,14 @@ export class RegisterDto {
   @IsOptional()
   @IsEnum(UserRole, { message: 'Invalid role' })
   role?: UserRole;
+
+  @IsOptional()
+  @Matches(/^\+[1-9]\d{1,14}$/, {
+    message: 'Phone must be a valid international number in E.164 format, e.g. +14155552671',
+  })
+  phone?: string;
+
+  @IsOptional()
+  @Matches(/^[A-Z]{2}$/, { message: 'Country code must be a 2-letter ISO code, e.g. US' })
+  countryCode?: string;
 }

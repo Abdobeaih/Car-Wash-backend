@@ -11,6 +11,8 @@ export interface SafeUser {
   email: string;
   role: UserRole;
   emailVerified: boolean;
+  phone?: string;
+  countryCode?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -24,6 +26,8 @@ export class UsersService {
     email: string;
     password: string;
     role?: UserRole;
+    phone?: string;
+    countryCode?: string;
   }): Promise<SafeUser> {
     const hashed = await bcrypt.hash(data.password, 12);
     const created = new this.userModel({
@@ -31,6 +35,8 @@ export class UsersService {
       email: data.email.toLowerCase(),
       password: hashed,
       role: data.role ?? UserRole.CUSTOMER,
+      phone: data.phone,
+      countryCode: data.countryCode?.toUpperCase(),
     });
     const saved = await created.save();
     return this.toSafeUser(saved);
@@ -105,6 +111,8 @@ export class UsersService {
       email: user.email,
       role: user.role,
       emailVerified: user.emailVerified,
+      phone: user.phone,
+      countryCode: user.countryCode,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };

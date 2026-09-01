@@ -21,6 +21,8 @@ let User = class User {
     emailVerified;
     emailVerifiedAt;
     role;
+    phone;
+    countryCode;
     createdAt;
     updatedAt;
 };
@@ -57,6 +59,14 @@ __decorate([
     (0, mongoose_1.Prop)({ required: true, enum: roles_1.UserRole, default: roles_1.UserRole.CUSTOMER, type: String }),
     __metadata("design:type", String)
 ], User.prototype, "role", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ trim: true }),
+    __metadata("design:type", String)
+], User.prototype, "phone", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ trim: true, uppercase: true }),
+    __metadata("design:type", String)
+], User.prototype, "countryCode", void 0);
 exports.User = User = __decorate([
     (0, mongoose_1.Schema)({ timestamps: true })
 ], User);

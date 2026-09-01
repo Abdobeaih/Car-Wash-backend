@@ -39,6 +39,8 @@ let AuthService = class AuthService {
             email: dto.email,
             password: dto.password,
             role: roles_1.UserRole.CUSTOMER,
+            phone: dto.phone,
+            countryCode: dto.countryCode,
         });
         try {
             await this.otpService.requestOtp(dto.email, otp_schema_1.OtpPurpose.EMAIL_VERIFICATION);

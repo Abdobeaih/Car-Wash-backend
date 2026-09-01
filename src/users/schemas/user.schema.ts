@@ -30,6 +30,12 @@ export class User {
   @Prop({ required: true, enum: UserRole, default: UserRole.CUSTOMER, type: String })
   role: UserRole;
 
+  @Prop({ trim: true })
+  phone?: string;
+
+  @Prop({ trim: true, uppercase: true })
+  countryCode?: string;
+
   createdAt?: Date;
   updatedAt?: Date;
 }

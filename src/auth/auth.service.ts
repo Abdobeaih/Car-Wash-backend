@@ -40,6 +40,8 @@ export class AuthService {
       email: dto.email,
       password: dto.password,
       role: UserRole.CUSTOMER,
+      phone: dto.phone,
+      countryCode: dto.countryCode,
     });
 
     try {

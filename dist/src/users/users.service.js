@@ -64,6 +64,8 @@ let UsersService = class UsersService {
             email: data.email.toLowerCase(),
             password: hashed,
             role: data.role ?? roles_1.UserRole.CUSTOMER,
+            phone: data.phone,
+            countryCode: data.countryCode?.toUpperCase(),
         });
         const saved = await created.save();
         return this.toSafeUser(saved);
@@ -124,6 +126,8 @@ let UsersService = class UsersService {
             email: user.email,
             role: user.role,
             emailVerified: user.emailVerified,
+            phone: user.phone,
+            countryCode: user.countryCode,
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
         };
