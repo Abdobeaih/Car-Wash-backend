@@ -13,43 +13,49 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MailService = void 0;
 const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
-const resend_1 = require("resend");
+const nodemailer_1 = require("nodemailer");
 const otp_errors_1 = require("./otp-errors");
 let MailService = MailService_1 = class MailService {
     configService;
     logger = new common_1.Logger(MailService_1.name);
-    resend;
+    transporter;
     from;
     constructor(configService) {
         this.configService = configService;
-        const apiKey = this.configService.get('RESEND_API_KEY');
+        const user = this.configService.get('GMAIL_USER');
+        const pass = this.configService.get('GMAIL_APP_PASSWORD');
         this.from =
-            this.configService.get('MAIL_FROM') ?? 'Mobile Car Care <onboarding@resend.dev>';
-        this.resend = apiKey ? new resend_1.Resend(apiKey) : null;
+            this.configService.get('MAIL_FROM') ?? (user ? `Mobile Car Care <${user}>` : '');
+        if (user && pass) {
+            const host = this.configService.get('SMTP_HOST') ?? 'smtp.gmail.com';
+            const port = Number(this.configService.get('SMTP_PORT') ?? 465);
+            this.transporter = (0, nodemailer_1.createTransport)({
+                host,
+                port,
+                secure: port === 465,
+                auth: { user, pass },
+            });
+        }
+        else {
+            this.transporter = null;
+        }
     }
     async sendOtpEmail({ to, purpose, otp, expiresInMinutes }) {
         const subject = purpose === 'reset' ? 'Reset your password' : 'Verify your email';
         const text = this.buildText(purpose, otp, expiresInMinutes);
-        if (!this.resend) {
-            this.logger.warn(`RESEND_API_KEY is not configured. Email for ${to} was not sent.`);
+        if (!this.transporter) {
+            this.logger.warn(`Gmail credentials are not configured. Email for ${to} was not sent.`);
             throw new otp_errors_1.OtpException(otp_errors_1.OtpErrorCode.EMAIL_SEND_FAILED, 'Unable to send the verification email. Please try again later.');
         }
         try {
-            const result = await this.resend.emails.send({
+            await this.transporter.sendMail({
                 from: this.from,
                 to,
                 subject,
                 text,
             });
-            if (result.error) {
-                this.logger.error(`Resend failed: ${result.error.message}`);
-                throw new otp_errors_1.OtpException(otp_errors_1.OtpErrorCode.EMAIL_SEND_FAILED, 'Unable to send the verification email. Please try again later.');
-            }
         }
         catch (err) {
-            if (err instanceof otp_errors_1.OtpException) {
-                throw err;
-            }
             this.logger.error('Unexpected email send failure', err);
             throw new otp_errors_1.OtpException(otp_errors_1.OtpErrorCode.EMAIL_SEND_FAILED, 'Unable to send the verification email. Please try again later.');
         }
