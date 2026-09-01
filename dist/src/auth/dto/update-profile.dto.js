@@ -14,7 +14,6 @@ const class_validator_1 = require("class-validator");
 class UpdateProfileDto {
     name;
     email;
-    phone;
 }
 exports.UpdateProfileDto = UpdateProfileDto;
 __decorate([
@@ -28,10 +27,4 @@ __decorate([
     (0, class_validator_1.IsEmail)({}, { message: 'A valid email is required' }),
     __metadata("design:type", String)
 ], UpdateProfileDto.prototype, "email", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.Matches)(/^\+?\d{6,15}$/, { message: 'A valid phone number is required' }),
-    __metadata("design:type", String)
-], UpdateProfileDto.prototype, "phone", void 0);
 //# sourceMappingURL=update-profile.dto.js.map

@@ -6,9 +6,6 @@ export interface SafeUser {
     _id: string;
     name: string;
     email: string;
-    phone?: string;
-    countryCode?: string;
-    verificationChannel: OtpChannel;
     role: UserRole;
     emailVerified: boolean;
     createdAt?: Date;
@@ -32,9 +29,6 @@ export declare class UsersService {
     updateProfile(id: string, data: {
         name?: string;
         email?: string;
-        phone?: string;
-        countryCode?: string;
-        verificationChannel?: OtpChannel;
     }): Promise<SafeUser | null>;
     updatePassword(id: string, password: string): Promise<void>;
     setPasswordReset(id: string, tokenHash: string, expires: Date): Promise<void>;

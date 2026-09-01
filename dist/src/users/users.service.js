@@ -93,12 +93,6 @@ let UsersService = class UsersService {
             user.name = data.name;
         if (data.email !== undefined)
             user.email = data.email.toLowerCase();
-        if (data.phone !== undefined)
-            user.phone = data.phone;
-        if (data.countryCode !== undefined)
-            user.countryCode = data.countryCode;
-        if (data.verificationChannel !== undefined)
-            user.verificationChannel = data.verificationChannel;
         const saved = await user.save();
         return this.toSafeUser(saved);
     }
@@ -132,9 +126,6 @@ let UsersService = class UsersService {
             _id: user._id.toString(),
             name: user.name,
             email: user.email,
-            phone: user.phone,
-            countryCode: user.countryCode,
-            verificationChannel: user.verificationChannel ?? otp_schema_1.OtpChannel.EMAIL,
             role: user.role,
             emailVerified: user.emailVerified,
             createdAt: user.createdAt,
