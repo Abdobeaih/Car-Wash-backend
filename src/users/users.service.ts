@@ -10,6 +10,7 @@ export interface SafeUser {
   _id: string;
   name: string;
   email: string;
+  phone?: string;
   role: UserRole;
   emailVerified: boolean;
   createdAt?: Date;
@@ -61,12 +62,13 @@ export class UsersService {
 
   async updateProfile(
     id: string,
-    data: { name?: string; email?: string },
+    data: { name?: string; email?: string; phone?: string },
   ): Promise<SafeUser | null> {
     const user = await this.userModel.findById(id).exec();
     if (!user) return null;
     if (data.name !== undefined) user.name = data.name;
     if (data.email !== undefined) user.email = data.email.toLowerCase();
+    if (data.phone !== undefined) user.phone = data.phone;
     const saved = await user.save();
     return this.toSafeUser(saved);
   }
@@ -110,6 +112,7 @@ export class UsersService {
       _id: user._id.toString(),
       name: user.name,
       email: user.email,
+      phone: user.phone,
       role: user.role,
       emailVerified: user.emailVerified,
       createdAt: user.createdAt,
