@@ -9,16 +9,23 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.OtpSchema = exports.Otp = exports.OtpPurpose = void 0;
+exports.OtpSchema = exports.Otp = exports.OtpChannel = exports.OtpPurpose = void 0;
 const mongoose_1 = require("@nestjs/mongoose");
 var OtpPurpose;
 (function (OtpPurpose) {
     OtpPurpose["EMAIL_VERIFICATION"] = "EMAIL_VERIFICATION";
     OtpPurpose["PASSWORD_RESET"] = "PASSWORD_RESET";
 })(OtpPurpose || (exports.OtpPurpose = OtpPurpose = {}));
+var OtpChannel;
+(function (OtpChannel) {
+    OtpChannel["EMAIL"] = "EMAIL";
+    OtpChannel["SMS"] = "SMS";
+})(OtpChannel || (exports.OtpChannel = OtpChannel = {}));
 let Otp = class Otp {
     email;
     purpose;
+    channel;
+    target;
     otpHash;
     expiresAt;
     attempts;
@@ -39,6 +46,14 @@ __decorate([
     (0, mongoose_1.Prop)({ required: true, enum: OtpPurpose, type: String, index: true }),
     __metadata("design:type", String)
 ], Otp.prototype, "purpose", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ required: true, enum: OtpChannel, type: String, default: OtpChannel.EMAIL }),
+    __metadata("design:type", String)
+], Otp.prototype, "channel", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ required: true, trim: true }),
+    __metadata("design:type", String)
+], Otp.prototype, "target", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ required: true }),
     __metadata("design:type", String)

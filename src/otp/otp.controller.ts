@@ -2,6 +2,7 @@ import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { OtpService } from './otp.service';
 import { SendOtpDto } from './dto/send-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { OtpChannel } from './schemas/otp.schema';
 
 @Controller('auth')
 export class OtpController {
@@ -10,7 +11,12 @@ export class OtpController {
   @Post('send-otp')
   @HttpCode(HttpStatus.OK)
   async sendOtp(@Body() dto: SendOtpDto) {
-    await this.otpService.requestOtp(dto.email, dto.purpose);
+    await this.otpService.requestOtp(
+      dto.email,
+      dto.purpose,
+      dto.channel ?? OtpChannel.EMAIL,
+      dto.phone,
+    );
     return { message: 'Verification code sent.' };
   }
 
@@ -24,7 +30,12 @@ export class OtpController {
   @Post('resend-otp')
   @HttpCode(HttpStatus.OK)
   async resendOtp(@Body() dto: SendOtpDto) {
-    await this.otpService.requestOtp(dto.email, dto.purpose);
+    await this.otpService.requestOtp(
+      dto.email,
+      dto.purpose,
+      dto.channel ?? OtpChannel.EMAIL,
+      dto.phone,
+    );
     return { message: 'A new verification code has been sent.' };
   }
 }

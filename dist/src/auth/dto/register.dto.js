@@ -12,11 +12,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.RegisterDto = void 0;
 const class_validator_1 = require("class-validator");
 const roles_1 = require("../../common/constants/roles");
+const otp_schema_1 = require("../../otp/schemas/otp.schema");
 class RegisterDto {
     name;
     email;
     password;
     phone;
+    countryCode;
+    verificationChannel;
     role;
 }
 exports.RegisterDto = RegisterDto;
@@ -36,10 +39,21 @@ __decorate([
 ], RegisterDto.prototype, "password", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.Matches)(/^\+?\d{6,15}$/, { message: 'A valid phone number is required' }),
+    (0, class_validator_1.Matches)(/^\+[1-9]\d{1,14}$/, {
+        message: 'Phone must be in international format, e.g. +14155552671',
+    }),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "phone", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.Matches)(/^[A-Z]{2}$/, { message: 'Country code must be 2 letters, e.g. US' }),
+    __metadata("design:type", String)
+], RegisterDto.prototype, "countryCode", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEnum)(otp_schema_1.OtpChannel, { message: 'Invalid verification channel, use EMAIL or SMS' }),
+    __metadata("design:type", String)
+], RegisterDto.prototype, "verificationChannel", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsEnum)(roles_1.UserRole, { message: 'Invalid role' }),

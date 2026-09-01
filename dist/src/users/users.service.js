@@ -52,6 +52,7 @@ const mongoose_2 = require("mongoose");
 const bcrypt = __importStar(require("bcryptjs"));
 const user_schema_1 = require("./schemas/user.schema");
 const roles_1 = require("../common/constants/roles");
+const otp_schema_1 = require("../otp/schemas/otp.schema");
 let UsersService = class UsersService {
     userModel;
     constructor(userModel) {
@@ -64,6 +65,8 @@ let UsersService = class UsersService {
             email: data.email.toLowerCase(),
             password: hashed,
             phone: data.phone,
+            countryCode: data.countryCode,
+            verificationChannel: data.verificationChannel ?? otp_schema_1.OtpChannel.EMAIL,
             role: data.role ?? roles_1.UserRole.CUSTOMER,
         });
         const saved = await created.save();
@@ -92,6 +95,10 @@ let UsersService = class UsersService {
             user.email = data.email.toLowerCase();
         if (data.phone !== undefined)
             user.phone = data.phone;
+        if (data.countryCode !== undefined)
+            user.countryCode = data.countryCode;
+        if (data.verificationChannel !== undefined)
+            user.verificationChannel = data.verificationChannel;
         const saved = await user.save();
         return this.toSafeUser(saved);
     }
@@ -126,6 +133,8 @@ let UsersService = class UsersService {
             name: user.name,
             email: user.email,
             phone: user.phone,
+            countryCode: user.countryCode,
+            verificationChannel: user.verificationChannel ?? otp_schema_1.OtpChannel.EMAIL,
             role: user.role,
             emailVerified: user.emailVerified,
             createdAt: user.createdAt,

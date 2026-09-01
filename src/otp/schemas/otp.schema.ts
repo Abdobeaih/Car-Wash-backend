@@ -6,6 +6,11 @@ export enum OtpPurpose {
   PASSWORD_RESET = 'PASSWORD_RESET',
 }
 
+export enum OtpChannel {
+  EMAIL = 'EMAIL',
+  SMS = 'SMS',
+}
+
 export type OtpDocument = HydratedDocument<Otp>;
 
 @Schema({ timestamps: true })
@@ -15,6 +20,12 @@ export class Otp {
 
   @Prop({ required: true, enum: OtpPurpose, type: String, index: true })
   purpose: OtpPurpose;
+
+  @Prop({ required: true, enum: OtpChannel, type: String, default: OtpChannel.EMAIL })
+  channel: OtpChannel;
+
+  @Prop({ required: true, trim: true })
+  target: string;
 
   @Prop({ required: true })
   otpHash: string;

@@ -3,10 +3,12 @@
  */
 import { Test } from '@nestjs/testing';
 import { getModelToken } from '@nestjs/mongoose';
+import { BadRequestException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { OtpService } from '../src/otp/otp.service';
 import { MailService } from '../src/otp/mail.service';
-import { Otp, OtpPurpose } from '../src/otp/schemas/otp.schema';
+import { SmsService } from '../src/otp/sms.service';
+import { Otp, OtpChannel, OtpPurpose } from '../src/otp/schemas/otp.schema';
 import { OtpErrorCode, OtpException } from '../src/otp/otp-errors';
 import { OTP_MAX_ATTEMPTS } from '../src/otp/otp-config';
 
@@ -15,6 +17,10 @@ describe('OtpService', () => {
 
   const mailService = {
     sendOtpEmail: jest.fn(),
+  };
+
+  const smsService = {
+    sendOtpSms: jest.fn(),
   };
 
   const makeDoc = (overrides: Record<string, unknown> = {}) => {
@@ -46,6 +52,7 @@ describe('OtpService', () => {
   beforeEach(async () => {
     jest.resetAllMocks();
     mailService.sendOtpEmail.mockResolvedValue(undefined);
+    smsService.sendOtpSms.mockResolvedValue(undefined);
     findOneReturn.findOne.mockReturnThis();
     findOneReturn.sort.mockReturnThis();
     findOneReturn.exec.mockResolvedValue(null);
@@ -61,6 +68,7 @@ describe('OtpService', () => {
         OtpService,
         { provide: getModelToken(Otp.name), useValue: otpModel },
         { provide: MailService, useValue: mailService },
+        { provide: SmsService, useValue: smsService },
       ],
     }).compile();
 
@@ -77,6 +85,8 @@ describe('OtpService', () => {
 
     const created = otpModel.create.mock.calls[0][0];
     expect(created.email).toBe('test@example.com');
+    expect(created.channel).toBe(OtpChannel.EMAIL);
+    expect(created.target).toBe('test@example.com');
     expect(created.attempts).toBe(0);
     expect(created.used).toBe(false);
     expect(created.otpHash).toMatch(/^\$2[a-z]\$/);
@@ -253,6 +263,36 @@ describe('OtpService', () => {
     ).rejects.toMatchObject({ code: OtpErrorCode.MAX_ATTEMPTS });
     expect(record.used).toBe(true);
     expect(record.save).toHaveBeenCalled();
+  });
+
+  it('sends the OTP by SMS when the channel is SMS', async () => {
+    otpModel.findOne.mockReturnValue({
+      sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
+    });
+    otpModel.create.mockImplementation((data) => makeDoc(data));
+
+    await otpService.requestOtp(
+      'test@example.com',
+      OtpPurpose.EMAIL_VERIFICATION,
+      OtpChannel.SMS,
+      '+14155552671',
+    );
+
+    const created = otpModel.create.mock.calls[0][0];
+    expect(created.channel).toBe(OtpChannel.SMS);
+    expect(created.target).toBe('+14155552671');
+
+    expect(mailService.sendOtpEmail).not.toHaveBeenCalled();
+    const smsPayload = smsService.sendOtpSms.mock.calls[0][0];
+    expect(smsPayload.to).toBe('+14155552671');
+    expect(smsPayload.otp).toMatch(/^\d{6}$/);
+  });
+
+  it('rejects an SMS request without a phone number', async () => {
+    await expect(
+      otpService.requestOtp('test@example.com', OtpPurpose.EMAIL_VERIFICATION, OtpChannel.SMS),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(smsService.sendOtpSms).not.toHaveBeenCalled();
   });
 
   it('throws EMAIL_SEND_FAILED when the email cannot be sent', async () => {

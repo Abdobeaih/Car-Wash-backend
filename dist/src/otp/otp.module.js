@@ -13,6 +13,7 @@ const otp_schema_1 = require("./schemas/otp.schema");
 const otp_service_1 = require("./otp.service");
 const otp_controller_1 = require("./otp.controller");
 const mail_service_1 = require("./mail.service");
+const sms_service_1 = require("./sms.service");
 let OtpModule = class OtpModule {
 };
 exports.OtpModule = OtpModule;
@@ -20,7 +21,7 @@ exports.OtpModule = OtpModule = __decorate([
     (0, common_1.Module)({
         imports: [mongoose_1.MongooseModule.forFeature([{ name: otp_schema_1.Otp.name, schema: otp_schema_1.OtpSchema }])],
         controllers: [otp_controller_1.OtpController],
-        providers: [otp_service_1.OtpService, mail_service_1.MailService],
+        providers: [otp_service_1.OtpService, mail_service_1.MailService, sms_service_1.SmsService],
         exports: [otp_service_1.OtpService],
     })
 ], OtpModule);

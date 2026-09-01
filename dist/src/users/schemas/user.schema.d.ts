@@ -1,10 +1,13 @@
 import { HydratedDocument } from 'mongoose';
 import { UserRole } from '../../common/constants/roles';
+import { OtpChannel } from '../../otp/schemas/otp.schema';
 export type UserDocument = HydratedDocument<User>;
 export declare class User {
     name: string;
     email: string;
     phone?: string;
+    countryCode?: string;
+    verificationChannel: OtpChannel;
     password: string;
     passwordResetToken?: string;
     passwordResetExpires?: Date;
@@ -42,6 +45,24 @@ export declare const UserSchema: import("mongoose").Schema<User, import("mongoos
         id: string;
     }>> | undefined;
     phone?: import("mongoose").SchemaDefinitionProperty<string | undefined, User, import("mongoose").Document<unknown, {}, User, {
+        id: string;
+    }, import("mongoose").DefaultSchemaOptions> & Omit<User & {
+        _id: import("mongoose").Types.ObjectId;
+    } & {
+        __v: number;
+    }, "id"> & import("mongoose").HydratedDocumentOverrides<{
+        id: string;
+    }>> | undefined;
+    countryCode?: import("mongoose").SchemaDefinitionProperty<string | undefined, User, import("mongoose").Document<unknown, {}, User, {
+        id: string;
+    }, import("mongoose").DefaultSchemaOptions> & Omit<User & {
+        _id: import("mongoose").Types.ObjectId;
+    } & {
+        __v: number;
+    }, "id"> & import("mongoose").HydratedDocumentOverrides<{
+        id: string;
+    }>> | undefined;
+    verificationChannel?: import("mongoose").SchemaDefinitionProperty<OtpChannel, User, import("mongoose").Document<unknown, {}, User, {
         id: string;
     }, import("mongoose").DefaultSchemaOptions> & Omit<User & {
         _id: import("mongoose").Types.ObjectId;

@@ -15,6 +15,8 @@ const otp_schema_1 = require("../schemas/otp.schema");
 class SendOtpDto {
     email;
     purpose;
+    channel;
+    phone;
 }
 exports.SendOtpDto = SendOtpDto;
 __decorate([
@@ -25,4 +27,16 @@ __decorate([
     (0, class_validator_1.IsEnum)(otp_schema_1.OtpPurpose, { message: 'Invalid purpose' }),
     __metadata("design:type", String)
 ], SendOtpDto.prototype, "purpose", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEnum)(otp_schema_1.OtpChannel, { message: 'Invalid verification channel' }),
+    __metadata("design:type", String)
+], SendOtpDto.prototype, "channel", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.Matches)(/^\+[1-9]\d{1,14}$/, {
+        message: 'Phone must be in international format, e.g. +14155552671',
+    }),
+    __metadata("design:type", String)
+], SendOtpDto.prototype, "phone", void 0);
 //# sourceMappingURL=send-otp.dto.js.map

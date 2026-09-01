@@ -12,6 +12,7 @@ var OtpErrorCode;
     OtpErrorCode["RESEND_TOO_SOON"] = "OTP_RESEND_TOO_SOON";
     OtpErrorCode["RATE_LIMITED"] = "OTP_RATE_LIMITED";
     OtpErrorCode["EMAIL_SEND_FAILED"] = "EMAIL_SEND_FAILED";
+    OtpErrorCode["SMS_SEND_FAILED"] = "SMS_SEND_FAILED";
 })(OtpErrorCode || (exports.OtpErrorCode = OtpErrorCode = {}));
 class OtpException extends common_1.HttpException {
     code;

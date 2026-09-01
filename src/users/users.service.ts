@@ -4,12 +4,15 @@ import { Model } from 'mongoose';
 import * as bcrypt from 'bcryptjs';
 import { User, UserDocument } from './schemas/user.schema';
 import { UserRole } from '../common/constants/roles';
+import { OtpChannel } from '../otp/schemas/otp.schema';
 
 export interface SafeUser {
   _id: string;
   name: string;
   email: string;
   phone?: string;
+  countryCode?: string;
+  verificationChannel: OtpChannel;
   role: UserRole;
   emailVerified: boolean;
   createdAt?: Date;
@@ -25,6 +28,8 @@ export class UsersService {
     email: string;
     password: string;
     phone?: string;
+    countryCode?: string;
+    verificationChannel?: OtpChannel;
     role?: UserRole;
   }): Promise<SafeUser> {
     const hashed = await bcrypt.hash(data.password, 12);
@@ -33,6 +38,8 @@ export class UsersService {
       email: data.email.toLowerCase(),
       password: hashed,
       phone: data.phone,
+      countryCode: data.countryCode,
+      verificationChannel: data.verificationChannel ?? OtpChannel.EMAIL,
       role: data.role ?? UserRole.CUSTOMER,
     });
     const saved = await created.save();
@@ -57,13 +64,21 @@ export class UsersService {
 
   async updateProfile(
     id: string,
-    data: { name?: string; email?: string; phone?: string },
+    data: {
+      name?: string;
+      email?: string;
+      phone?: string;
+      countryCode?: string;
+      verificationChannel?: OtpChannel;
+    },
   ): Promise<SafeUser | null> {
     const user = await this.userModel.findById(id).exec();
     if (!user) return null;
     if (data.name !== undefined) user.name = data.name;
     if (data.email !== undefined) user.email = data.email.toLowerCase();
     if (data.phone !== undefined) user.phone = data.phone;
+    if (data.countryCode !== undefined) user.countryCode = data.countryCode;
+    if (data.verificationChannel !== undefined) user.verificationChannel = data.verificationChannel;
     const saved = await user.save();
     return this.toSafeUser(saved);
   }
@@ -108,6 +123,8 @@ export class UsersService {
       name: user.name,
       email: user.email,
       phone: user.phone,
+      countryCode: user.countryCode,
+      verificationChannel: user.verificationChannel ?? OtpChannel.EMAIL,
       role: user.role,
       emailVerified: user.emailVerified,
       createdAt: user.createdAt,

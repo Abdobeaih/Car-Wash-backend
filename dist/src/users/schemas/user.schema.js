@@ -12,10 +12,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserSchema = exports.User = void 0;
 const mongoose_1 = require("@nestjs/mongoose");
 const roles_1 = require("../../common/constants/roles");
+const otp_schema_1 = require("../../otp/schemas/otp.schema");
 let User = class User {
     name;
     email;
     phone;
+    countryCode;
+    verificationChannel;
     password;
     passwordResetToken;
     passwordResetExpires;
@@ -38,6 +41,14 @@ __decorate([
     (0, mongoose_1.Prop)({ trim: true }),
     __metadata("design:type", String)
 ], User.prototype, "phone", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ trim: true, uppercase: true }),
+    __metadata("design:type", String)
+], User.prototype, "countryCode", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ required: true, enum: otp_schema_1.OtpChannel, type: String, default: otp_schema_1.OtpChannel.EMAIL }),
+    __metadata("design:type", String)
+], User.prototype, "verificationChannel", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ required: true, select: false }),
     __metadata("design:type", String)

@@ -1,11 +1,14 @@
 import { Model } from 'mongoose';
 import { UserDocument } from './schemas/user.schema';
 import { UserRole } from '../common/constants/roles';
+import { OtpChannel } from '../otp/schemas/otp.schema';
 export interface SafeUser {
     _id: string;
     name: string;
     email: string;
     phone?: string;
+    countryCode?: string;
+    verificationChannel: OtpChannel;
     role: UserRole;
     emailVerified: boolean;
     createdAt?: Date;
@@ -19,6 +22,8 @@ export declare class UsersService {
         email: string;
         password: string;
         phone?: string;
+        countryCode?: string;
+        verificationChannel?: OtpChannel;
         role?: UserRole;
     }): Promise<SafeUser>;
     findByEmail(email: string): Promise<UserDocument | null>;
@@ -28,6 +33,8 @@ export declare class UsersService {
         name?: string;
         email?: string;
         phone?: string;
+        countryCode?: string;
+        verificationChannel?: OtpChannel;
     }): Promise<SafeUser | null>;
     updatePassword(id: string, password: string): Promise<void>;
     setPasswordReset(id: string, tokenHash: string, expires: Date): Promise<void>;

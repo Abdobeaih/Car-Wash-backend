@@ -7,7 +7,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { OtpService } from '../otp/otp.service';
-import { OtpPurpose } from '../otp/schemas/otp.schema';
+import { OtpChannel, OtpPurpose } from '../otp/schemas/otp.schema';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -35,16 +35,28 @@ export class AuthService {
       throw new BadRequestException('Admin accounts cannot be created through registration.');
     }
 
+    const channel = dto.verificationChannel ?? OtpChannel.EMAIL;
+    if (channel === OtpChannel.SMS && !dto.phone) {
+      throw new BadRequestException('A phone number is required to receive the code by SMS.');
+    }
+
     const user = await this.usersService.create({
       name: dto.name,
       email: dto.email,
       password: dto.password,
       phone: dto.phone,
+      countryCode: dto.countryCode,
+      verificationChannel: channel,
       role: UserRole.CUSTOMER,
     });
 
     try {
-      await this.otpService.requestOtp(dto.email, OtpPurpose.EMAIL_VERIFICATION);
+      await this.otpService.requestOtp(
+        dto.email,
+        OtpPurpose.EMAIL_VERIFICATION,
+        channel,
+        channel === OtpChannel.SMS ? dto.phone : undefined,
+      );
     } catch (err) {
       await this.usersService.deleteUser(user._id);
       throw err;
@@ -53,7 +65,9 @@ export class AuthService {
     return {
       user,
       message:
-        'Account created. A verification code was sent to your email. Please verify your email to log in.',
+        channel === OtpChannel.SMS
+          ? 'Account created. A verification code was sent by SMS. Please verify your account to log in.'
+          : 'Account created. A verification code was sent to your email. Please verify your email to log in.',
     };
   }
 
@@ -137,7 +151,7 @@ export class AuthService {
         message: 'If an account exists for this email, a reset code will be provided.',
       };
     }
-    await this.otpService.requestOtp(dto.email, OtpPurpose.PASSWORD_RESET);
+    await this.otpService.requestOtp(dto.email, OtpPurpose.PASSWORD_RESET, OtpChannel.EMAIL);
     return {
       message: 'If an account exists for this email, a reset code will be provided.',
     };
@@ -171,7 +185,18 @@ export class AuthService {
     if (user.emailVerified) {
       throw new BadRequestException('This email is already verified.');
     }
-    await this.otpService.requestOtp(email, OtpPurpose.EMAIL_VERIFICATION);
+    const channel = user.verificationChannel ?? OtpChannel.EMAIL;
+    if (channel === OtpChannel.SMS && !user.phone) {
+      throw new BadRequestException(
+        'No phone number on file. Please update your profile to receive codes by SMS.',
+      );
+    }
+    await this.otpService.requestOtp(
+      email,
+      OtpPurpose.EMAIL_VERIFICATION,
+      channel,
+      channel === OtpChannel.SMS ? user.phone : undefined,
+    );
     return { message: 'A new verification code has been sent.' };
   }
 }

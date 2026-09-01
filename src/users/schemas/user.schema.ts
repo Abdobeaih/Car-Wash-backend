@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
 import { UserRole } from '../../common/constants/roles';
+import { OtpChannel } from '../../otp/schemas/otp.schema';
 
 export type UserDocument = HydratedDocument<User>;
 
@@ -14,6 +15,12 @@ export class User {
 
   @Prop({ trim: true })
   phone?: string;
+
+  @Prop({ trim: true, uppercase: true })
+  countryCode?: string;
+
+  @Prop({ required: true, enum: OtpChannel, type: String, default: OtpChannel.EMAIL })
+  verificationChannel: OtpChannel;
 
   @Prop({ required: true, select: false })
   password: string;

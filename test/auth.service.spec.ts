@@ -7,8 +7,9 @@ import { UsersService } from '../src/users/users.service';
 import { OtpService } from '../src/otp/otp.service';
 import { OtpPurpose } from '../src/otp/schemas/otp.schema';
 import { JwtService } from '@nestjs/jwt';
-import { NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { UserRole } from '../src/common/constants/roles';
+import { OtpChannel } from '../src/otp/schemas/otp.schema';
 
 describe('AuthService', () => {
   let authService: AuthService;
@@ -107,8 +108,51 @@ describe('AuthService', () => {
     expect(otpService.requestOtp).toHaveBeenCalledWith(
       'new@example.com',
       OtpPurpose.EMAIL_VERIFICATION,
+      OtpChannel.EMAIL,
+      undefined,
     );
     expect(result).not.toHaveProperty('token');
+  });
+
+  it('registers a user and sends the verification code by SMS', async () => {
+    usersService.findByEmail.mockResolvedValue(null);
+    usersService.create.mockResolvedValue({ _id: 'user-1', email: 'new@example.com' });
+
+    const result = await authService.register({
+      name: 'New User',
+      email: 'new@example.com',
+      password: 'password123',
+      phone: '+14155552671',
+      countryCode: 'US',
+      verificationChannel: OtpChannel.SMS,
+    });
+
+    expect(usersService.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        phone: '+14155552671',
+        countryCode: 'US',
+        verificationChannel: OtpChannel.SMS,
+      }),
+    );
+    expect(otpService.requestOtp).toHaveBeenCalledWith(
+      'new@example.com',
+      OtpPurpose.EMAIL_VERIFICATION,
+      OtpChannel.SMS,
+      '+14155552671',
+    );
+    expect(result.message).toContain('SMS');
+  });
+
+  it('rejects SMS verification without a phone number', async () => {
+    await expect(
+      authService.register({
+        name: 'New User',
+        email: 'new@example.com',
+        password: 'password123',
+        verificationChannel: OtpChannel.SMS,
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(usersService.create).not.toHaveBeenCalled();
   });
 
   it('rolls back the user when the OTP email fails to send', async () => {
@@ -156,6 +200,7 @@ describe('AuthService', () => {
     expect(otpService.requestOtp).toHaveBeenCalledWith(
       'test@example.com',
       OtpPurpose.PASSWORD_RESET,
+      OtpChannel.EMAIL,
     );
     expect(result).not.toHaveProperty('resetToken');
   });

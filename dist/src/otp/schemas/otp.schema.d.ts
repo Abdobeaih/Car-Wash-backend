@@ -3,10 +3,16 @@ export declare enum OtpPurpose {
     EMAIL_VERIFICATION = "EMAIL_VERIFICATION",
     PASSWORD_RESET = "PASSWORD_RESET"
 }
+export declare enum OtpChannel {
+    EMAIL = "EMAIL",
+    SMS = "SMS"
+}
 export type OtpDocument = HydratedDocument<Otp>;
 export declare class Otp {
     email: string;
     purpose: OtpPurpose;
+    channel: OtpChannel;
+    target: string;
     otpHash: string;
     expiresAt: Date;
     attempts: number;
@@ -37,6 +43,24 @@ export declare const OtpSchema: import("mongoose").Schema<Otp, import("mongoose"
         id: string;
     }>> | undefined;
     purpose?: import("mongoose").SchemaDefinitionProperty<OtpPurpose, Otp, import("mongoose").Document<unknown, {}, Otp, {
+        id: string;
+    }, import("mongoose").DefaultSchemaOptions> & Omit<Otp & {
+        _id: import("mongoose").Types.ObjectId;
+    } & {
+        __v: number;
+    }, "id"> & import("mongoose").HydratedDocumentOverrides<{
+        id: string;
+    }>> | undefined;
+    channel?: import("mongoose").SchemaDefinitionProperty<OtpChannel, Otp, import("mongoose").Document<unknown, {}, Otp, {
+        id: string;
+    }, import("mongoose").DefaultSchemaOptions> & Omit<Otp & {
+        _id: import("mongoose").Types.ObjectId;
+    } & {
+        __v: number;
+    }, "id"> & import("mongoose").HydratedDocumentOverrides<{
+        id: string;
+    }>> | undefined;
+    target?: import("mongoose").SchemaDefinitionProperty<string, Otp, import("mongoose").Document<unknown, {}, Otp, {
         id: string;
     }, import("mongoose").DefaultSchemaOptions> & Omit<Otp & {
         _id: import("mongoose").Types.ObjectId;

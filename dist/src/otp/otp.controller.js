@@ -17,13 +17,14 @@ const common_1 = require("@nestjs/common");
 const otp_service_1 = require("./otp.service");
 const send_otp_dto_1 = require("./dto/send-otp.dto");
 const verify_otp_dto_1 = require("./dto/verify-otp.dto");
+const otp_schema_1 = require("./schemas/otp.schema");
 let OtpController = class OtpController {
     otpService;
     constructor(otpService) {
         this.otpService = otpService;
     }
     async sendOtp(dto) {
-        await this.otpService.requestOtp(dto.email, dto.purpose);
+        await this.otpService.requestOtp(dto.email, dto.purpose, dto.channel ?? otp_schema_1.OtpChannel.EMAIL, dto.phone);
         return { message: 'Verification code sent.' };
     }
     async verifyOtp(dto) {
@@ -31,7 +32,7 @@ let OtpController = class OtpController {
         return { message: 'Verification successful.' };
     }
     async resendOtp(dto) {
-        await this.otpService.requestOtp(dto.email, dto.purpose);
+        await this.otpService.requestOtp(dto.email, dto.purpose, dto.channel ?? otp_schema_1.OtpChannel.EMAIL, dto.phone);
         return { message: 'A new verification code has been sent.' };
     }
 };

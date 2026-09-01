@@ -9,6 +9,7 @@ export enum OtpErrorCode {
   RESEND_TOO_SOON = 'OTP_RESEND_TOO_SOON',
   RATE_LIMITED = 'OTP_RATE_LIMITED',
   EMAIL_SEND_FAILED = 'EMAIL_SEND_FAILED',
+  SMS_SEND_FAILED = 'SMS_SEND_FAILED',
 }
 
 export class OtpException extends HttpException {

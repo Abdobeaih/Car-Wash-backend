@@ -34,15 +34,21 @@ let AuthService = class AuthService {
         if (role === roles_1.UserRole.ADMIN) {
             throw new common_1.BadRequestException('Admin accounts cannot be created through registration.');
         }
+        const channel = dto.verificationChannel ?? otp_schema_1.OtpChannel.EMAIL;
+        if (channel === otp_schema_1.OtpChannel.SMS && !dto.phone) {
+            throw new common_1.BadRequestException('A phone number is required to receive the code by SMS.');
+        }
         const user = await this.usersService.create({
             name: dto.name,
             email: dto.email,
             password: dto.password,
             phone: dto.phone,
+            countryCode: dto.countryCode,
+            verificationChannel: channel,
             role: roles_1.UserRole.CUSTOMER,
         });
         try {
-            await this.otpService.requestOtp(dto.email, otp_schema_1.OtpPurpose.EMAIL_VERIFICATION);
+            await this.otpService.requestOtp(dto.email, otp_schema_1.OtpPurpose.EMAIL_VERIFICATION, channel, channel === otp_schema_1.OtpChannel.SMS ? dto.phone : undefined);
         }
         catch (err) {
             await this.usersService.deleteUser(user._id);
@@ -50,7 +56,9 @@ let AuthService = class AuthService {
         }
         return {
             user,
-            message: 'Account created. A verification code was sent to your email. Please verify your email to log in.',
+            message: channel === otp_schema_1.OtpChannel.SMS
+                ? 'Account created. A verification code was sent by SMS. Please verify your account to log in.'
+                : 'Account created. A verification code was sent to your email. Please verify your email to log in.',
         };
     }
     async login(dto) {
@@ -123,7 +131,7 @@ let AuthService = class AuthService {
                 message: 'If an account exists for this email, a reset code will be provided.',
             };
         }
-        await this.otpService.requestOtp(dto.email, otp_schema_1.OtpPurpose.PASSWORD_RESET);
+        await this.otpService.requestOtp(dto.email, otp_schema_1.OtpPurpose.PASSWORD_RESET, otp_schema_1.OtpChannel.EMAIL);
         return {
             message: 'If an account exists for this email, a reset code will be provided.',
         };
@@ -154,7 +162,11 @@ let AuthService = class AuthService {
         if (user.emailVerified) {
             throw new common_1.BadRequestException('This email is already verified.');
         }
-        await this.otpService.requestOtp(email, otp_schema_1.OtpPurpose.EMAIL_VERIFICATION);
+        const channel = user.verificationChannel ?? otp_schema_1.OtpChannel.EMAIL;
+        if (channel === otp_schema_1.OtpChannel.SMS && !user.phone) {
+            throw new common_1.BadRequestException('No phone number on file. Please update your profile to receive codes by SMS.');
+        }
+        await this.otpService.requestOtp(email, otp_schema_1.OtpPurpose.EMAIL_VERIFICATION, channel, channel === otp_schema_1.OtpChannel.SMS ? user.phone : undefined);
         return { message: 'A new verification code has been sent.' };
     }
 };

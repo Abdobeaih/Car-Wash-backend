@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { randomInt } from 'crypto';
 import * as bcrypt from 'bcryptjs';
-import { Otp, OtpDocument, OtpPurpose } from './schemas/otp.schema';
+import { Otp, OtpChannel, OtpDocument, OtpPurpose } from './schemas/otp.schema';
 import { MailService } from './mail.service';
+import { SmsService } from './sms.service';
 import { OtpErrorCode, OtpException } from './otp-errors';
 import {
   OTP_EXPIRY_MS,
@@ -19,11 +20,23 @@ export class OtpService {
   constructor(
     @InjectModel(Otp.name) private readonly otpModel: Model<OtpDocument>,
     private readonly mailService: MailService,
+    private readonly smsService: SmsService,
   ) {}
 
-  async requestOtp(email: string, purpose: OtpPurpose): Promise<void> {
+  async requestOtp(
+    email: string,
+    purpose: OtpPurpose,
+    channel: OtpChannel = OtpChannel.EMAIL,
+    target?: string,
+  ): Promise<void> {
     const normalized = email.toLowerCase();
     const now = Date.now();
+
+    if (channel === OtpChannel.SMS && !target) {
+      throw new BadRequestException('A valid phone number is required to receive the code by SMS.');
+    }
+    const deliveryTarget = channel === OtpChannel.SMS ? (target as string) : normalized;
+
     const latest = await this.findLatest(normalized, purpose);
 
     if (latest && now - latest.lastRequestAt.getTime() < OTP_RESEND_COOLDOWN_MS) {
@@ -74,6 +87,8 @@ export class OtpService {
     await this.otpModel.create({
       email: normalized,
       purpose,
+      channel,
+      target: deliveryTarget,
       otpHash,
       expiresAt,
       attempts: 0,
@@ -82,6 +97,15 @@ export class OtpService {
       rateWindowStart: withinRateWindow ? rateLatest.rateWindowStart : new Date(now),
       lastRequestAt: new Date(now),
     });
+
+    if (channel === OtpChannel.SMS) {
+      await this.smsService.sendOtpSms({
+        to: deliveryTarget,
+        otp,
+        expiresInMinutes: OTP_EXPIRY_MS / 60000,
+      });
+      return;
+    }
 
     await this.mailService.sendOtpEmail({
       to: normalized,

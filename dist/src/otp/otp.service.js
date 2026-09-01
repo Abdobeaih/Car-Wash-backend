@@ -53,18 +53,25 @@ const crypto_1 = require("crypto");
 const bcrypt = __importStar(require("bcryptjs"));
 const otp_schema_1 = require("./schemas/otp.schema");
 const mail_service_1 = require("./mail.service");
+const sms_service_1 = require("./sms.service");
 const otp_errors_1 = require("./otp-errors");
 const otp_config_1 = require("./otp-config");
 let OtpService = class OtpService {
     otpModel;
     mailService;
-    constructor(otpModel, mailService) {
+    smsService;
+    constructor(otpModel, mailService, smsService) {
         this.otpModel = otpModel;
         this.mailService = mailService;
+        this.smsService = smsService;
     }
-    async requestOtp(email, purpose) {
+    async requestOtp(email, purpose, channel = otp_schema_1.OtpChannel.EMAIL, target) {
         const normalized = email.toLowerCase();
         const now = Date.now();
+        if (channel === otp_schema_1.OtpChannel.SMS && !target) {
+            throw new common_1.BadRequestException('A valid phone number is required to receive the code by SMS.');
+        }
+        const deliveryTarget = channel === otp_schema_1.OtpChannel.SMS ? target : normalized;
         const latest = await this.findLatest(normalized, purpose);
         if (latest && now - latest.lastRequestAt.getTime() < otp_config_1.OTP_RESEND_COOLDOWN_MS) {
             const remaining = Math.ceil((otp_config_1.OTP_RESEND_COOLDOWN_MS - (now - latest.lastRequestAt.getTime())) / 1000);
@@ -93,6 +100,8 @@ let OtpService = class OtpService {
         await this.otpModel.create({
             email: normalized,
             purpose,
+            channel,
+            target: deliveryTarget,
             otpHash,
             expiresAt,
             attempts: 0,
@@ -101,6 +110,14 @@ let OtpService = class OtpService {
             rateWindowStart: withinRateWindow ? rateLatest.rateWindowStart : new Date(now),
             lastRequestAt: new Date(now),
         });
+        if (channel === otp_schema_1.OtpChannel.SMS) {
+            await this.smsService.sendOtpSms({
+                to: deliveryTarget,
+                otp,
+                expiresInMinutes: otp_config_1.OTP_EXPIRY_MS / 60000,
+            });
+            return;
+        }
         await this.mailService.sendOtpEmail({
             to: normalized,
             purpose: purpose === otp_schema_1.OtpPurpose.PASSWORD_RESET ? 'reset' : 'verify',
@@ -151,6 +168,7 @@ exports.OtpService = OtpService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, mongoose_1.InjectModel)(otp_schema_1.Otp.name)),
     __metadata("design:paramtypes", [mongoose_2.Model,
-        mail_service_1.MailService])
+        mail_service_1.MailService,
+        sms_service_1.SmsService])
 ], OtpService);
 //# sourceMappingURL=otp.service.js.map
