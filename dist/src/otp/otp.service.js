@@ -44,7 +44,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.OtpService = void 0;
 const common_1 = require("@nestjs/common");
@@ -71,10 +70,10 @@ let OtpService = class OtpService {
             const remaining = Math.ceil((otp_config_1.OTP_RESEND_COOLDOWN_MS - (now - latest.lastRequestAt.getTime())) / 1000);
             throw new otp_errors_1.OtpException(otp_errors_1.OtpErrorCode.RESEND_TOO_SOON, `Please wait ${remaining}s before requesting another code.`);
         }
-        if (latest && now - latest.rateWindowStart.getTime() < otp_config_1.OTP_RATE_WINDOW_MS) {
-            if (latest.requestCount >= otp_config_1.OTP_MAX_REQUESTS) {
-                throw new otp_errors_1.OtpException(otp_errors_1.OtpErrorCode.RATE_LIMITED, 'Too many code requests. Please try again in 10 minutes.');
-            }
+        const rateLatest = await this.findLatestGlobal(normalized);
+        const withinRateWindow = rateLatest && now - rateLatest.rateWindowStart.getTime() < otp_config_1.OTP_RATE_WINDOW_MS;
+        if (withinRateWindow && rateLatest.requestCount >= otp_config_1.OTP_MAX_REQUESTS) {
+            throw new otp_errors_1.OtpException(otp_errors_1.OtpErrorCode.RATE_LIMITED, 'Too many code requests. Please try again in 10 minutes.');
         }
         const otp = (0, crypto_1.randomInt)(100000, 1000000).toString();
         const otpHash = await bcrypt.hash(otp, 10);
@@ -83,6 +82,14 @@ let OtpService = class OtpService {
             latest.used = true;
             await latest.save();
         }
+        await this.otpModel
+            .updateMany({
+            email: normalized,
+            purpose: { $ne: purpose },
+            used: false,
+            expiresAt: { $gt: new Date(now) },
+        }, { $set: { used: true, usedAt: new Date(now) } })
+            .exec();
         await this.otpModel.create({
             email: normalized,
             purpose,
@@ -90,12 +97,8 @@ let OtpService = class OtpService {
             expiresAt,
             attempts: 0,
             used: false,
-            requestCount: latest && now - latest.rateWindowStart.getTime() < otp_config_1.OTP_RATE_WINDOW_MS
-                ? latest.requestCount + 1
-                : 1,
-            rateWindowStart: latest && now - latest.rateWindowStart.getTime() < otp_config_1.OTP_RATE_WINDOW_MS
-                ? latest.rateWindowStart
-                : new Date(now),
+            requestCount: withinRateWindow ? rateLatest.requestCount + 1 : 1,
+            rateWindowStart: withinRateWindow ? rateLatest.rateWindowStart : new Date(now),
             lastRequestAt: new Date(now),
         });
         await this.mailService.sendOtpEmail({
@@ -123,10 +126,13 @@ let OtpService = class OtpService {
         const valid = await bcrypt.compare(otp, record.otpHash);
         if (!valid) {
             record.attempts += 1;
-            await record.save();
             if (record.attempts >= otp_config_1.OTP_MAX_ATTEMPTS) {
+                record.used = true;
+                record.usedAt = new Date();
+                await record.save();
                 throw new otp_errors_1.OtpException(otp_errors_1.OtpErrorCode.MAX_ATTEMPTS, 'Too many incorrect attempts. Request a new code.');
             }
+            await record.save();
             throw new otp_errors_1.OtpException(otp_errors_1.OtpErrorCode.INVALID, 'The code you entered is incorrect.');
         }
         record.used = true;
@@ -136,11 +142,15 @@ let OtpService = class OtpService {
     findLatest(email, purpose) {
         return this.otpModel.findOne({ email, purpose }).sort({ createdAt: -1 }).exec();
     }
+    findLatestGlobal(email) {
+        return this.otpModel.findOne({ email }).sort({ createdAt: -1 }).exec();
+    }
 };
 exports.OtpService = OtpService;
 exports.OtpService = OtpService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, mongoose_1.InjectModel)(otp_schema_1.Otp.name)),
-    __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _a : Object, mail_service_1.MailService])
+    __metadata("design:paramtypes", [mongoose_2.Model,
+        mail_service_1.MailService])
 ], OtpService);
 //# sourceMappingURL=otp.service.js.map

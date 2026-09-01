@@ -13,14 +13,36 @@ export declare class AuthService {
     private readonly jwtService;
     private readonly otpService;
     constructor(usersService: UsersService, jwtService: JwtService, otpService: OtpService);
-    register(dto: RegisterDto): unknown;
-    login(dto: LoginDto): unknown;
+    register(dto: RegisterDto): Promise<{
+        user: import("../users/users.service").SafeUser;
+        message: string;
+    }>;
+    login(dto: LoginDto): Promise<{
+        user: {
+            _id: string;
+            name: string;
+            email: string;
+            role: UserRole;
+            emailVerified: boolean;
+        };
+        token: string;
+    }>;
     signToken(id: string, email: string, role: UserRole): string;
-    getCurrentUser(userId: string): unknown;
-    updateProfile(userId: string, dto: UpdateProfileDto): unknown;
-    changePassword(userId: string, dto: ChangePasswordDto): unknown;
-    forgotPassword(dto: ForgotPasswordDto): unknown;
-    resetPassword(dto: ResetPasswordDto): unknown;
-    verifyEmail(email: string, otp: string): unknown;
-    resendVerificationOtp(email: string): unknown;
+    getCurrentUser(userId: string): Promise<import("../users/users.service").SafeUser | null>;
+    updateProfile(userId: string, dto: UpdateProfileDto): Promise<import("../users/users.service").SafeUser>;
+    changePassword(userId: string, dto: ChangePasswordDto): Promise<{
+        message: string;
+    }>;
+    forgotPassword(dto: ForgotPasswordDto): Promise<{
+        message: string;
+    }>;
+    resetPassword(dto: ResetPasswordDto): Promise<{
+        message: string;
+    }>;
+    verifyEmail(email: string, otp: string): Promise<{
+        message: string;
+    }>;
+    resendVerificationOtp(email: string): Promise<{
+        message: string;
+    }>;
 }

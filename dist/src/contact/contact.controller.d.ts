@@ -6,7 +6,19 @@ export declare class ContactController {
     create(dto: CreateContactDto): Promise<{
         message: string;
     }>;
-    findAll(): Promise<{}>;
+    findAll(): Promise<(import("mongoose").Document<unknown, {}, import("./schemas/contact-message.schema").ContactMessage, {}, import("mongoose").DefaultSchemaOptions> & import("./schemas/contact-message.schema").ContactMessage & {
+        _id: import("mongoose").Types.ObjectId;
+    } & {
+        __v: number;
+    } & {
+        id: string;
+    })[]>;
     getUnreadCount(): Promise<number>;
-    markAsRead(id: string): Promise<HydratedDocument<import("./schemas/contact-message.schema").ContactMessage>>;
+    markAsRead(id: string): Promise<import("mongoose").Document<unknown, {}, import("./schemas/contact-message.schema").ContactMessage, {}, import("mongoose").DefaultSchemaOptions> & import("./schemas/contact-message.schema").ContactMessage & {
+        _id: import("mongoose").Types.ObjectId;
+    } & {
+        __v: number;
+    } & {
+        id: string;
+    }>;
 }

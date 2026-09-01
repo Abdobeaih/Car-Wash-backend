@@ -8,6 +8,7 @@ import { OtpService } from '../src/otp/otp.service';
 import { MailService } from '../src/otp/mail.service';
 import { Otp, OtpPurpose } from '../src/otp/schemas/otp.schema';
 import { OtpErrorCode, OtpException } from '../src/otp/otp-errors';
+import { OTP_MAX_ATTEMPTS } from '../src/otp/otp-config';
 
 describe('OtpService', () => {
   let otpService: OtpService;
@@ -37,6 +38,7 @@ describe('OtpService', () => {
   let otpModel: {
     findOne: jest.Mock;
     create: jest.Mock;
+    updateMany: jest.Mock;
   };
 
   const findOneReturn = { findOne: jest.fn(), sort: jest.fn(), exec: jest.fn() };
@@ -51,6 +53,7 @@ describe('OtpService', () => {
     otpModel = {
       findOne: jest.fn(),
       create: jest.fn(),
+      updateMany: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue({}) }),
     };
 
     const moduleRef = await Test.createTestingModule({
@@ -128,6 +131,54 @@ describe('OtpService', () => {
     expect(existing.save).toHaveBeenCalled();
   });
 
+  it('invalidates unexpired OTPs for other purposes when a new one is requested', async () => {
+    const pending = makeDoc({
+      purpose: OtpPurpose.PASSWORD_RESET,
+      lastRequestAt: new Date(Date.now() - 2 * 60 * 1000),
+      rateWindowStart: new Date(Date.now() - 2 * 60 * 1000),
+    });
+    otpModel.findOne
+      .mockReturnValueOnce({
+        sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
+      })
+      .mockReturnValueOnce({
+        sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(pending) }),
+      });
+    otpModel.create.mockImplementation((data) => makeDoc(data));
+
+    await otpService.requestOtp('test@example.com', OtpPurpose.EMAIL_VERIFICATION);
+
+    expect(otpModel.updateMany).toHaveBeenCalledWith(
+      {
+        email: 'test@example.com',
+        purpose: { $ne: OtpPurpose.EMAIL_VERIFICATION },
+        used: false,
+        expiresAt: { $gt: expect.any(Date) },
+      },
+      { $set: { used: true, usedAt: expect.any(Date) } },
+    );
+  });
+
+  it('rate limits across purposes using the newest record for the email', async () => {
+    const resetDoc = makeDoc({
+      purpose: OtpPurpose.PASSWORD_RESET,
+      requestCount: 3,
+      lastRequestAt: new Date(Date.now() - 2 * 60 * 1000),
+      rateWindowStart: new Date(Date.now() - 2 * 60 * 1000),
+    });
+    otpModel.findOne
+      .mockReturnValueOnce({
+        sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
+      })
+      .mockReturnValueOnce({
+        sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(resetDoc) }),
+      });
+
+    await expect(
+      otpService.requestOtp('test@example.com', OtpPurpose.EMAIL_VERIFICATION),
+    ).rejects.toMatchObject({ code: OtpErrorCode.RATE_LIMITED });
+  });
+
   it('verifies a correct OTP and marks it used', async () => {
     const hash = await bcrypt.hash('123456', 10);
     const record = makeDoc({ otpHash: hash });
@@ -188,6 +239,20 @@ describe('OtpService', () => {
     await expect(
       otpService.verifyOtp('test@example.com', OtpPurpose.EMAIL_VERIFICATION, '123456'),
     ).rejects.toMatchObject({ code: OtpErrorCode.MAX_ATTEMPTS });
+  });
+
+  it('invalidates the OTP when the max attempts limit is reached', async () => {
+    const hash = await bcrypt.hash('123456', 10);
+    const record = makeDoc({ otpHash: hash, attempts: OTP_MAX_ATTEMPTS - 1 });
+    otpModel.findOne.mockReturnValue({
+      sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(record) }),
+    });
+
+    await expect(
+      otpService.verifyOtp('test@example.com', OtpPurpose.EMAIL_VERIFICATION, '000000'),
+    ).rejects.toMatchObject({ code: OtpErrorCode.MAX_ATTEMPTS });
+    expect(record.used).toBe(true);
+    expect(record.save).toHaveBeenCalled();
   });
 
   it('throws EMAIL_SEND_FAILED when the email cannot be sent', async () => {

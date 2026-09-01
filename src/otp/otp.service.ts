@@ -36,13 +36,16 @@ export class OtpService {
       );
     }
 
-    if (latest && now - latest.rateWindowStart.getTime() < OTP_RATE_WINDOW_MS) {
-      if (latest.requestCount >= OTP_MAX_REQUESTS) {
-        throw new OtpException(
-          OtpErrorCode.RATE_LIMITED,
-          'Too many code requests. Please try again in 10 minutes.',
-        );
-      }
+    // Rate limit applies to the email address across all purposes: the newest
+    // OTP record for the email carries the rolling window counter.
+    const rateLatest = await this.findLatestGlobal(normalized);
+    const withinRateWindow =
+      rateLatest && now - rateLatest.rateWindowStart.getTime() < OTP_RATE_WINDOW_MS;
+    if (withinRateWindow && rateLatest.requestCount >= OTP_MAX_REQUESTS) {
+      throw new OtpException(
+        OtpErrorCode.RATE_LIMITED,
+        'Too many code requests. Please try again in 10 minutes.',
+      );
     }
 
     const otp = randomInt(100000, 1000000).toString();
@@ -54,6 +57,20 @@ export class OtpService {
       await latest.save();
     }
 
+    // A new OTP invalidates every other unexpired OTP issued for this email
+    // (e.g. a password-reset code invalidates a pending verification code).
+    await this.otpModel
+      .updateMany(
+        {
+          email: normalized,
+          purpose: { $ne: purpose },
+          used: false,
+          expiresAt: { $gt: new Date(now) },
+        },
+        { $set: { used: true, usedAt: new Date(now) } },
+      )
+      .exec();
+
     await this.otpModel.create({
       email: normalized,
       purpose,
@@ -61,14 +78,8 @@ export class OtpService {
       expiresAt,
       attempts: 0,
       used: false,
-      requestCount:
-        latest && now - latest.rateWindowStart.getTime() < OTP_RATE_WINDOW_MS
-          ? latest.requestCount + 1
-          : 1,
-      rateWindowStart:
-        latest && now - latest.rateWindowStart.getTime() < OTP_RATE_WINDOW_MS
-          ? latest.rateWindowStart
-          : new Date(now),
+      requestCount: withinRateWindow ? rateLatest.requestCount + 1 : 1,
+      rateWindowStart: withinRateWindow ? rateLatest.rateWindowStart : new Date(now),
       lastRequestAt: new Date(now),
     });
 
@@ -108,13 +119,16 @@ export class OtpService {
     const valid = await bcrypt.compare(otp, record.otpHash);
     if (!valid) {
       record.attempts += 1;
-      await record.save();
       if (record.attempts >= OTP_MAX_ATTEMPTS) {
+        record.used = true;
+        record.usedAt = new Date();
+        await record.save();
         throw new OtpException(
           OtpErrorCode.MAX_ATTEMPTS,
           'Too many incorrect attempts. Request a new code.',
         );
       }
+      await record.save();
       throw new OtpException(OtpErrorCode.INVALID, 'The code you entered is incorrect.');
     }
 
@@ -125,5 +139,9 @@ export class OtpService {
 
   private findLatest(email: string, purpose: OtpPurpose): Promise<OtpDocument | null> {
     return this.otpModel.findOne({ email, purpose }).sort({ createdAt: -1 }).exec();
+  }
+
+  private findLatestGlobal(email: string): Promise<OtpDocument | null> {
+    return this.otpModel.findOne({ email }).sort({ createdAt: -1 }).exec();
   }
 }

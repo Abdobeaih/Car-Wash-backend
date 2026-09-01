@@ -8,4 +8,5 @@ export declare class OtpService {
     requestOtp(email: string, purpose: OtpPurpose): Promise<void>;
     verifyOtp(email: string, purpose: OtpPurpose, otp: string): Promise<void>;
     private findLatest;
+    private findLatestGlobal;
 }

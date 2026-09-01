@@ -7,9 +7,33 @@ export declare class BookingsController {
     private readonly bookingsService;
     private readonly availabilityService;
     constructor(bookingsService: BookingsService, availabilityService: AvailabilityService);
-    getAvailability(query: AvailabilityQueryDto): Promise<{}>;
-    create(user: RequestUser, dto: CreateBookingDto): Promise<HydratedDocument<import("./schemas/booking.schema").Booking>>;
-    findAll(user: RequestUser): Promise<{}>;
-    findOne(user: RequestUser, id: string): Promise<HydratedDocument<import("./schemas/booking.schema").Booking>>;
-    cancel(user: RequestUser, id: string): Promise<HydratedDocument<import("./schemas/booking.schema").Booking>>;
+    getAvailability(query: AvailabilityQueryDto): Promise<import("./availability.service").TimeSlot[]>;
+    create(user: RequestUser, dto: CreateBookingDto): Promise<import("mongoose").Document<unknown, {}, import("./schemas/booking.schema").Booking, {}, import("mongoose").DefaultSchemaOptions> & import("./schemas/booking.schema").Booking & {
+        _id: import("mongoose").Types.ObjectId;
+    } & {
+        __v: number;
+    } & {
+        id: string;
+    }>;
+    findAll(user: RequestUser): Promise<(import("mongoose").Document<unknown, {}, import("./schemas/booking.schema").Booking, {}, import("mongoose").DefaultSchemaOptions> & import("./schemas/booking.schema").Booking & {
+        _id: import("mongoose").Types.ObjectId;
+    } & {
+        __v: number;
+    } & {
+        id: string;
+    })[]>;
+    findOne(user: RequestUser, id: string): Promise<import("mongoose").Document<unknown, {}, import("./schemas/booking.schema").Booking, {}, import("mongoose").DefaultSchemaOptions> & import("./schemas/booking.schema").Booking & {
+        _id: import("mongoose").Types.ObjectId;
+    } & {
+        __v: number;
+    } & {
+        id: string;
+    }>;
+    cancel(user: RequestUser, id: string): Promise<import("mongoose").Document<unknown, {}, import("./schemas/booking.schema").Booking, {}, import("mongoose").DefaultSchemaOptions> & import("./schemas/booking.schema").Booking & {
+        _id: import("mongoose").Types.ObjectId;
+    } & {
+        __v: number;
+    } & {
+        id: string;
+    }>;
 }
