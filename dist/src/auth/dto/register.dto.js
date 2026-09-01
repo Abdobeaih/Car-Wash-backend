@@ -17,8 +17,6 @@ class RegisterDto {
     email;
     password;
     role;
-    phone;
-    countryCode;
 }
 exports.RegisterDto = RegisterDto;
 __decorate([
@@ -40,16 +38,4 @@ __decorate([
     (0, class_validator_1.IsEnum)(roles_1.UserRole, { message: 'Invalid role' }),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "role", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.Matches)(/^\+[1-9]\d{1,14}$/, {
-        message: 'Phone must be a valid international number in E.164 format, e.g. +14155552671',
-    }),
-    __metadata("design:type", String)
-], RegisterDto.prototype, "phone", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.Matches)(/^[A-Z]{2}$/, { message: 'Country code must be a 2-letter ISO code, e.g. US' }),
-    __metadata("design:type", String)
-], RegisterDto.prototype, "countryCode", void 0);
 //# sourceMappingURL=register.dto.js.map

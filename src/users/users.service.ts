@@ -9,10 +9,9 @@ export interface SafeUser {
   _id: string;
   name: string;
   email: string;
+  phone?: string;
   role: UserRole;
   emailVerified: boolean;
-  phone?: string;
-  countryCode?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -25,18 +24,16 @@ export class UsersService {
     name: string;
     email: string;
     password: string;
-    role?: UserRole;
     phone?: string;
-    countryCode?: string;
+    role?: UserRole;
   }): Promise<SafeUser> {
     const hashed = await bcrypt.hash(data.password, 12);
     const created = new this.userModel({
       name: data.name,
       email: data.email.toLowerCase(),
       password: hashed,
-      role: data.role ?? UserRole.CUSTOMER,
       phone: data.phone,
-      countryCode: data.countryCode?.toUpperCase(),
+      role: data.role ?? UserRole.CUSTOMER,
     });
     const saved = await created.save();
     return this.toSafeUser(saved);
@@ -60,12 +57,13 @@ export class UsersService {
 
   async updateProfile(
     id: string,
-    data: { name?: string; email?: string },
+    data: { name?: string; email?: string; phone?: string },
   ): Promise<SafeUser | null> {
     const user = await this.userModel.findById(id).exec();
     if (!user) return null;
     if (data.name !== undefined) user.name = data.name;
     if (data.email !== undefined) user.email = data.email.toLowerCase();
+    if (data.phone !== undefined) user.phone = data.phone;
     const saved = await user.save();
     return this.toSafeUser(saved);
   }
@@ -109,10 +107,9 @@ export class UsersService {
       _id: user._id.toString(),
       name: user.name,
       email: user.email,
+      phone: user.phone,
       role: user.role,
       emailVerified: user.emailVerified,
-      phone: user.phone,
-      countryCode: user.countryCode,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };

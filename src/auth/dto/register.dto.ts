@@ -14,16 +14,11 @@ export class RegisterDto {
   password: string;
 
   @IsOptional()
-  @IsEnum(UserRole, { message: 'Invalid role' })
-  role?: UserRole;
-
-  @IsOptional()
-  @Matches(/^\+[1-9]\d{1,14}$/, {
-    message: 'Phone must be a valid international number in E.164 format, e.g. +14155552671',
-  })
+  @IsString()
+  @Matches(/^\+?\d{6,15}$/, { message: 'A valid phone number is required' })
   phone?: string;
 
   @IsOptional()
-  @Matches(/^[A-Z]{2}$/, { message: 'Country code must be a 2-letter ISO code, e.g. US' })
-  countryCode?: string;
+  @IsEnum(UserRole, { message: 'Invalid role' })
+  role?: UserRole;
 }

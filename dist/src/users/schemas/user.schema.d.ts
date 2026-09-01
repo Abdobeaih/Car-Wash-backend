@@ -10,8 +10,6 @@ export declare class User {
     emailVerified: boolean;
     emailVerifiedAt?: Date;
     role: UserRole;
-    phone?: string;
-    countryCode?: string;
     createdAt?: Date;
     updatedAt?: Date;
 }
@@ -88,24 +86,6 @@ export declare const UserSchema: import("mongoose").Schema<User, import("mongoos
         id: string;
     }>> | undefined;
     role?: import("mongoose").SchemaDefinitionProperty<UserRole, User, import("mongoose").Document<unknown, {}, User, {
-        id: string;
-    }, import("mongoose").DefaultSchemaOptions> & Omit<User & {
-        _id: import("mongoose").Types.ObjectId;
-    } & {
-        __v: number;
-    }, "id"> & import("mongoose").HydratedDocumentOverrides<{
-        id: string;
-    }>> | undefined;
-    phone?: import("mongoose").SchemaDefinitionProperty<string | undefined, User, import("mongoose").Document<unknown, {}, User, {
-        id: string;
-    }, import("mongoose").DefaultSchemaOptions> & Omit<User & {
-        _id: import("mongoose").Types.ObjectId;
-    } & {
-        __v: number;
-    }, "id"> & import("mongoose").HydratedDocumentOverrides<{
-        id: string;
-    }>> | undefined;
-    countryCode?: import("mongoose").SchemaDefinitionProperty<string | undefined, User, import("mongoose").Document<unknown, {}, User, {
         id: string;
     }, import("mongoose").DefaultSchemaOptions> & Omit<User & {
         _id: import("mongoose").Types.ObjectId;

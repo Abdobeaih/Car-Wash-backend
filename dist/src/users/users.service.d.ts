@@ -7,8 +7,6 @@ export interface SafeUser {
     email: string;
     role: UserRole;
     emailVerified: boolean;
-    phone?: string;
-    countryCode?: string;
     createdAt?: Date;
     updatedAt?: Date;
 }
@@ -20,8 +18,6 @@ export declare class UsersService {
         email: string;
         password: string;
         role?: UserRole;
-        phone?: string;
-        countryCode?: string;
     }): Promise<SafeUser>;
     findByEmail(email: string): Promise<UserDocument | null>;
     findById(id: string): Promise<SafeUser | null>;

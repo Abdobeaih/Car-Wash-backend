@@ -39,9 +39,8 @@ export class AuthService {
       name: dto.name,
       email: dto.email,
       password: dto.password,
-      role: UserRole.CUSTOMER,
       phone: dto.phone,
-      countryCode: dto.countryCode,
+      role: UserRole.CUSTOMER,
     });
 
     try {
@@ -110,6 +109,7 @@ export class AuthService {
     const updated = await this.usersService.updateProfile(userId, {
       name: dto.name,
       email: dto.email,
+      phone: dto.phone,
     });
     if (!updated) {
       throw new NotFoundException('User not found.');
