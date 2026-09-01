@@ -38,6 +38,7 @@ let AuthService = class AuthService {
             name: dto.name,
             email: dto.email,
             password: dto.password,
+            phone: dto.phone,
             role: roles_1.UserRole.CUSTOMER,
         });
         try {
@@ -96,6 +97,7 @@ let AuthService = class AuthService {
         const updated = await this.usersService.updateProfile(userId, {
             name: dto.name,
             email: dto.email,
+            phone: dto.phone,
         });
         if (!updated) {
             throw new common_1.NotFoundException('User not found.');

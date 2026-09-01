@@ -15,6 +15,7 @@ const roles_1 = require("../../common/constants/roles");
 let User = class User {
     name;
     email;
+    phone;
     password;
     passwordResetToken;
     passwordResetExpires;
@@ -33,6 +34,10 @@ __decorate([
     (0, mongoose_1.Prop)({ required: true, unique: true, lowercase: true, trim: true, index: true }),
     __metadata("design:type", String)
 ], User.prototype, "email", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ trim: true }),
+    __metadata("design:type", String)
+], User.prototype, "phone", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ required: true, select: false }),
     __metadata("design:type", String)

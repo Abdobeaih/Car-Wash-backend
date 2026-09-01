@@ -16,6 +16,7 @@ class RegisterDto {
     name;
     email;
     password;
+    phone;
     role;
 }
 exports.RegisterDto = RegisterDto;
@@ -33,6 +34,12 @@ __decorate([
     (0, class_validator_1.MinLength)(8, { message: 'Password must be at least 8 characters' }),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "password", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.Matches)(/^\+?\d{6,15}$/, { message: 'A valid phone number is required' }),
+    __metadata("design:type", String)
+], RegisterDto.prototype, "phone", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsEnum)(roles_1.UserRole, { message: 'Invalid role' }),

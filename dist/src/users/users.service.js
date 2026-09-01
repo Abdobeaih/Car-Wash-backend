@@ -63,6 +63,7 @@ let UsersService = class UsersService {
             name: data.name,
             email: data.email.toLowerCase(),
             password: hashed,
+            phone: data.phone,
             role: data.role ?? roles_1.UserRole.CUSTOMER,
         });
         const saved = await created.save();
@@ -89,6 +90,8 @@ let UsersService = class UsersService {
             user.name = data.name;
         if (data.email !== undefined)
             user.email = data.email.toLowerCase();
+        if (data.phone !== undefined)
+            user.phone = data.phone;
         const saved = await user.save();
         return this.toSafeUser(saved);
     }
@@ -122,6 +125,7 @@ let UsersService = class UsersService {
             _id: user._id.toString(),
             name: user.name,
             email: user.email,
+            phone: user.phone,
             role: user.role,
             emailVerified: user.emailVerified,
             createdAt: user.createdAt,
