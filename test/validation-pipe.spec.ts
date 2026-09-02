@@ -77,6 +77,23 @@ describe('Global ValidationPipe (whitelist + forbidNonWhitelisted)', () => {
     });
   });
 
+  it('accepts the exact current frontend register payload (intl phone + countryCode)', async () => {
+    const payload = {
+      name: 'New User',
+      email: 'new@example.com',
+      phone: '+20201234567890',
+      password: 'password123',
+      countryCode: 'EG',
+    };
+    await expect(pipe.transform(payload, body(RegisterDto))).resolves.toMatchObject({
+      name: 'New User',
+      email: 'new@example.com',
+      phone: '+20201234567890',
+      password: 'password123',
+      countryCode: 'EG',
+    });
+  });
+
   it('accepts the register email payload without phone', async () => {
     const payload = {
       name: 'New User',
