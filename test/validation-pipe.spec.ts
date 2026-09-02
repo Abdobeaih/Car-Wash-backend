@@ -11,6 +11,8 @@ import {
 } from '@nestjs/common';
 import { UpdateProfileDto } from '../src/auth/dto/update-profile.dto';
 import { RegisterDto } from '../src/auth/dto/register.dto';
+import { ResendVerificationDto } from '../src/auth/dto/resend-verification.dto';
+import { SendOtpDto } from '../src/otp/dto/send-otp.dto';
 import { OtpChannel } from '../src/otp/schemas/otp.schema';
 
 describe('Global ValidationPipe (whitelist + forbidNonWhitelisted)', () => {
@@ -84,6 +86,34 @@ describe('Global ValidationPipe (whitelist + forbidNonWhitelisted)', () => {
     };
     await expect(pipe.transform(payload, body(RegisterDto))).resolves.toMatchObject({
       email: 'new@example.com',
+    });
+  });
+
+  it('accepts a phone on the OTP send request (send-otp)', async () => {
+    const payload = {
+      email: 'new@example.com',
+      purpose: 'EMAIL_VERIFICATION',
+      channel: OtpChannel.SMS,
+      phone: '+14155552671',
+    };
+    await expect(pipe.transform(payload, body(SendOtpDto))).resolves.toMatchObject({
+      phone: '+14155552671',
+      channel: OtpChannel.SMS,
+    });
+  });
+
+  it('rejects a malformed phone on the OTP send request', async () => {
+    const messages = await validationMessages(
+      { email: 'new@example.com', purpose: 'EMAIL_VERIFICATION', phone: 'abc' },
+      SendOtpDto,
+    );
+    expect(messages).toContain('Phone must be in international format');
+  });
+
+  it('accepts a phone on the resend-verification request', async () => {
+    const payload = { email: 'new@example.com', phone: '+14155552671' };
+    await expect(pipe.transform(payload, body(ResendVerificationDto))).resolves.toMatchObject({
+      phone: '+14155552671',
     });
   });
 });

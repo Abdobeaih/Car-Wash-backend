@@ -177,7 +177,7 @@ export class AuthService {
     return { message: 'Email verified successfully. You can now log in.' };
   }
 
-  async resendVerificationOtp(email: string) {
+  async resendVerificationOtp(email: string, phone?: string) {
     const user = await this.usersService.findByEmail(email);
     if (!user) {
       throw new NotFoundException('User not found.');
@@ -186,7 +186,8 @@ export class AuthService {
       throw new BadRequestException('This email is already verified.');
     }
     const channel = user.verificationChannel ?? OtpChannel.EMAIL;
-    if (channel === OtpChannel.SMS && !user.phone) {
+    const target = phone ?? user.phone;
+    if (channel === OtpChannel.SMS && !target) {
       throw new BadRequestException(
         'No phone number on file. Please update your profile to receive codes by SMS.',
       );
@@ -195,7 +196,7 @@ export class AuthService {
       email,
       OtpPurpose.EMAIL_VERIFICATION,
       channel,
-      channel === OtpChannel.SMS ? user.phone : undefined,
+      channel === OtpChannel.SMS ? target : undefined,
     );
     return { message: 'A new verification code has been sent.' };
   }

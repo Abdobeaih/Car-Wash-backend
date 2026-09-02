@@ -39,7 +39,7 @@ export class AuthController {
   @Post('resend-verification')
   @HttpCode(HttpStatus.OK)
   resendVerification(@Body() dto: ResendVerificationDto) {
-    return this.authService.resendVerificationOtp(dto.email);
+    return this.authService.resendVerificationOtp(dto.email, dto.phone);
   }
 
   @Post('login')

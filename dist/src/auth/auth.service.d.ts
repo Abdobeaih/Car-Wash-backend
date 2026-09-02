@@ -42,7 +42,7 @@ export declare class AuthService {
     verifyEmail(email: string, otp: string): Promise<{
         message: string;
     }>;
-    resendVerificationOtp(email: string): Promise<{
+    resendVerificationOtp(email: string, phone?: string): Promise<{
         message: string;
     }>;
 }

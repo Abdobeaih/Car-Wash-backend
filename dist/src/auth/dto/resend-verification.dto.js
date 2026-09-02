@@ -13,10 +13,18 @@ exports.ResendVerificationDto = void 0;
 const class_validator_1 = require("class-validator");
 class ResendVerificationDto {
     email;
+    phone;
 }
 exports.ResendVerificationDto = ResendVerificationDto;
 __decorate([
     (0, class_validator_1.IsEmail)({}, { message: 'A valid email is required' }),
     __metadata("design:type", String)
 ], ResendVerificationDto.prototype, "email", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.Matches)(/^\+[1-9]\d{1,14}$/, {
+        message: 'Phone must be in international format, e.g. +14155552671',
+    }),
+    __metadata("design:type", String)
+], ResendVerificationDto.prototype, "phone", void 0);
 //# sourceMappingURL=resend-verification.dto.js.map
