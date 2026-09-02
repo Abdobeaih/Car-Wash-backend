@@ -17,6 +17,9 @@ class RegisterDto {
     name;
     email;
     password;
+    confirmPassword;
+    country;
+    dialCode;
     phone;
     countryCode;
     verificationChannel;
@@ -38,9 +41,26 @@ __decorate([
     __metadata("design:type", String)
 ], RegisterDto.prototype, "password", void 0);
 __decorate([
+    (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.Matches)(/^\+[1-9]\d{1,14}$/, {
-        message: 'Phone must be in international format, e.g. +14155552671',
+    __metadata("design:type", String)
+], RegisterDto.prototype, "confirmPassword", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.Matches)(/^[A-Za-z ]{2,}$/, { message: 'Country must be a valid country name or 2-letter code' }),
+    __metadata("design:type", String)
+], RegisterDto.prototype, "country", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.Matches)(/^\+?\d{1,4}$/, {
+        message: 'Dial code must be an international dial code, e.g. +20 or 1',
+    }),
+    __metadata("design:type", String)
+], RegisterDto.prototype, "dialCode", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.Matches)(/^\+?[1-9]\d{4,14}$/, {
+        message: 'Phone must be a valid international or national number',
     }),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "phone", void 0);

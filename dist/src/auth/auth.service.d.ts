@@ -17,6 +17,8 @@ export declare class AuthService {
         user: import("../users/users.service").SafeUser;
         message: string;
     }>;
+    private resolvePhone;
+    private resolveCountryCode;
     login(dto: LoginDto): Promise<{
         user: {
             _id: string;

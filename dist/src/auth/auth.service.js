@@ -16,6 +16,40 @@ const users_service_1 = require("../users/users.service");
 const otp_service_1 = require("../otp/otp.service");
 const otp_schema_1 = require("../otp/schemas/otp.schema");
 const roles_1 = require("../common/constants/roles");
+const DIAL_CODE_TO_COUNTRY = {
+    '1': 'US',
+    '20': 'EG',
+    '44': 'GB',
+    '49': 'DE',
+    '33': 'FR',
+    '34': 'ES',
+    '39': 'IT',
+    '61': 'AU',
+    '81': 'JP',
+    '82': 'KR',
+    '86': 'CN',
+    '91': 'IN',
+    '971': 'AE',
+    '966': 'SA',
+    '965': 'KW',
+    '974': 'QA',
+    '968': 'OM',
+    '973': 'BH',
+    '962': 'JO',
+    '9710': 'AE',
+    '55': 'BR',
+    '52': 'MX',
+    '7': 'RU',
+    '31': 'NL',
+    '32': 'BE',
+    '41': 'CH',
+    '46': 'SE',
+    '47': 'NO',
+    '48': 'PL',
+    '351': 'PT',
+    '30': 'GR',
+    '90': 'TR',
+};
 let AuthService = class AuthService {
     usersService;
     jwtService;
@@ -34,21 +68,25 @@ let AuthService = class AuthService {
         if (role === roles_1.UserRole.ADMIN) {
             throw new common_1.BadRequestException('Admin accounts cannot be created through registration.');
         }
+        if (dto.confirmPassword !== undefined && dto.confirmPassword !== dto.password) {
+            throw new common_1.BadRequestException('Passwords do not match.');
+        }
         const channel = dto.verificationChannel ?? otp_schema_1.OtpChannel.EMAIL;
-        if (channel === otp_schema_1.OtpChannel.SMS && !dto.phone) {
+        const phone = this.resolvePhone(dto);
+        if (channel === otp_schema_1.OtpChannel.SMS && !phone) {
             throw new common_1.BadRequestException('A phone number is required to receive the code by SMS.');
         }
         const user = await this.usersService.create({
             name: dto.name,
             email: dto.email,
             password: dto.password,
-            phone: dto.phone,
-            countryCode: dto.countryCode,
+            phone,
+            countryCode: this.resolveCountryCode(dto),
             verificationChannel: channel,
             role: roles_1.UserRole.CUSTOMER,
         });
         try {
-            await this.otpService.requestOtp(dto.email, otp_schema_1.OtpPurpose.EMAIL_VERIFICATION, channel, channel === otp_schema_1.OtpChannel.SMS ? dto.phone : undefined);
+            await this.otpService.requestOtp(dto.email, otp_schema_1.OtpPurpose.EMAIL_VERIFICATION, channel, channel === otp_schema_1.OtpChannel.SMS ? phone : undefined);
         }
         catch (err) {
             await this.usersService.deleteUser(user._id);
@@ -60,6 +98,27 @@ let AuthService = class AuthService {
                 ? 'Account created. A verification code was sent by SMS. Please verify your account to log in.'
                 : 'Account created. A verification code was sent to your email. Please verify your email to log in.',
         };
+    }
+    resolvePhone(dto) {
+        if (dto.dialCode) {
+            const dial = dto.dialCode.replace(/^\+/, '');
+            const number = (dto.phone ?? '').replace(/^\+/, '').replace(/[^\d]/g, '');
+            if (!number)
+                return undefined;
+            return `+${dial}${number}`;
+        }
+        if (!dto.phone)
+            return undefined;
+        return dto.phone.startsWith('+') ? dto.phone : `+${dto.phone}`;
+    }
+    resolveCountryCode(dto) {
+        if (dto.countryCode)
+            return dto.countryCode.toUpperCase();
+        if (dto.country && /^[A-Za-z]{2}$/.test(dto.country))
+            return dto.country.toUpperCase();
+        if (dto.dialCode)
+            return DIAL_CODE_TO_COUNTRY[dto.dialCode.replace(/^\+/, '')];
+        return undefined;
     }
     async login(dto) {
         const user = await this.usersService.findByEmail(dto.email);

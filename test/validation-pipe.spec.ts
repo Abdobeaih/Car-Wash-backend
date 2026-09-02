@@ -116,4 +116,33 @@ describe('Global ValidationPipe (whitelist + forbidNonWhitelisted)', () => {
       phone: '+14155552671',
     });
   });
+
+  it('accepts the full registration form (country + dialCode + phone + confirmPassword)', async () => {
+    const payload = {
+      name: 'New User',
+      email: 'new@example.com',
+      password: 'password123',
+      confirmPassword: 'password123',
+      country: 'Egypt',
+      dialCode: '+20',
+      phone: '201234567890',
+    };
+    await expect(pipe.transform(payload, body(RegisterDto))).resolves.toMatchObject({
+      name: 'New User',
+      email: 'new@example.com',
+      password: 'password123',
+      confirmPassword: 'password123',
+      country: 'Egypt',
+      dialCode: '+20',
+      phone: '201234567890',
+    });
+  });
+
+  it('rejects an unknown field on the registration form (strict validation kept)', async () => {
+    const messages = await validationMessages(
+      { name: 'New User', email: 'new@example.com', password: 'password123', junk: true },
+      RegisterDto,
+    );
+    expect(messages).toContain('property junk should not exist');
+  });
 });

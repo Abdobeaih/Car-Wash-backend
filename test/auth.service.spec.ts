@@ -155,6 +155,73 @@ describe('AuthService', () => {
     expect(usersService.create).not.toHaveBeenCalled();
   });
 
+  it('combines dialCode + phone into one normalized number (no duplicate +)', async () => {
+    usersService.findByEmail.mockResolvedValue(null);
+    usersService.create.mockResolvedValue({ _id: 'user-1', email: 'new@example.com' });
+
+    await authService.register({
+      name: 'New User',
+      email: 'new@example.com',
+      password: 'password123',
+      confirmPassword: 'password123',
+      country: 'Egypt',
+      dialCode: '+20',
+      phone: '201234567890',
+    });
+
+    expect(usersService.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        phone: '+20201234567890',
+        countryCode: 'EG',
+      }),
+    );
+    expect(otpService.requestOtp).toHaveBeenCalledWith(
+      'new@example.com',
+      OtpPurpose.EMAIL_VERIFICATION,
+      OtpChannel.EMAIL,
+      undefined,
+    );
+  });
+
+  it('never passes the phone when EMAIL channel is used', async () => {
+    usersService.findByEmail.mockResolvedValue(null);
+    usersService.create.mockResolvedValue({ _id: 'user-1', email: 'new@example.com' });
+
+    await authService.register({
+      name: 'New User',
+      email: 'new@example.com',
+      password: 'password123',
+      confirmPassword: 'password123',
+      country: 'US',
+      dialCode: '1',
+      phone: '4155552671',
+    });
+
+    const createArg = usersService.create.mock.calls[0][0];
+    expect(createArg.phone).toBe('+14155552671');
+    expect(createArg).not.toHaveProperty('confirmPassword');
+    expect(otpService.requestOtp).toHaveBeenCalledWith(
+      'new@example.com',
+      OtpPurpose.EMAIL_VERIFICATION,
+      OtpChannel.EMAIL,
+      undefined,
+    );
+  });
+
+  it('rejects registration when confirmPassword does not match password', async () => {
+    usersService.findByEmail.mockResolvedValue(null);
+
+    await expect(
+      authService.register({
+        name: 'New User',
+        email: 'new@example.com',
+        password: 'password123',
+        confirmPassword: 'different123',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(usersService.create).not.toHaveBeenCalled();
+  });
+
   it('rolls back the user when the OTP email fails to send', async () => {
     usersService.findByEmail.mockResolvedValue(null);
     usersService.create.mockResolvedValue({ _id: 'user-1', email: 'new@example.com' });

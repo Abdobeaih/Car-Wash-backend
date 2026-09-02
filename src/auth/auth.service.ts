@@ -16,6 +16,45 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { UserRole } from '../common/constants/roles';
 
+// Minimal dial-code -> ISO 2-letter country map used to derive a normalized
+// `countryCode` when the frontend only submits a `dialCode`. Only the
+// registration form's most common entries are needed; unknown dial codes simply
+// leave `countryCode` unset (it stays optional on the User model).
+const DIAL_CODE_TO_COUNTRY: Record<string, string> = {
+  '1': 'US',
+  '20': 'EG',
+  '44': 'GB',
+  '49': 'DE',
+  '33': 'FR',
+  '34': 'ES',
+  '39': 'IT',
+  '61': 'AU',
+  '81': 'JP',
+  '82': 'KR',
+  '86': 'CN',
+  '91': 'IN',
+  '971': 'AE',
+  '966': 'SA',
+  '965': 'KW',
+  '974': 'QA',
+  '968': 'OM',
+  '973': 'BH',
+  '962': 'JO',
+  '9710': 'AE',
+  '55': 'BR',
+  '52': 'MX',
+  '7': 'RU',
+  '31': 'NL',
+  '32': 'BE',
+  '41': 'CH',
+  '46': 'SE',
+  '47': 'NO',
+  '48': 'PL',
+  '351': 'PT',
+  '30': 'GR',
+  '90': 'TR',
+};
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -35,8 +74,13 @@ export class AuthService {
       throw new BadRequestException('Admin accounts cannot be created through registration.');
     }
 
+    if (dto.confirmPassword !== undefined && dto.confirmPassword !== dto.password) {
+      throw new BadRequestException('Passwords do not match.');
+    }
+
     const channel = dto.verificationChannel ?? OtpChannel.EMAIL;
-    if (channel === OtpChannel.SMS && !dto.phone) {
+    const phone = this.resolvePhone(dto);
+    if (channel === OtpChannel.SMS && !phone) {
       throw new BadRequestException('A phone number is required to receive the code by SMS.');
     }
 
@@ -44,8 +88,8 @@ export class AuthService {
       name: dto.name,
       email: dto.email,
       password: dto.password,
-      phone: dto.phone,
-      countryCode: dto.countryCode,
+      phone,
+      countryCode: this.resolveCountryCode(dto),
       verificationChannel: channel,
       role: UserRole.CUSTOMER,
     });
@@ -55,7 +99,7 @@ export class AuthService {
         dto.email,
         OtpPurpose.EMAIL_VERIFICATION,
         channel,
-        channel === OtpChannel.SMS ? dto.phone : undefined,
+        channel === OtpChannel.SMS ? phone : undefined,
       );
     } catch (err) {
       await this.usersService.deleteUser(user._id);
@@ -69,6 +113,35 @@ export class AuthService {
           ? 'Account created. A verification code was sent by SMS. Please verify your account to log in.'
           : 'Account created. A verification code was sent to your email. Please verify your email to log in.',
     };
+  }
+
+  /**
+   * Produces the canonical international phone number (e.g. "+20201234567890").
+   * The frontend submits `dialCode` (e.g. "+20") and `phone` (e.g. "201234567890")
+   * separately; this joins them exactly once so we never store "+20+20..." and
+   * never lose the "+". A single full-international `phone` is kept as-is.
+   */
+  private resolvePhone(dto: RegisterDto): string | undefined {
+    if (dto.dialCode) {
+      const dial = dto.dialCode.replace(/^\+/, '');
+      const number = (dto.phone ?? '').replace(/^\+/, '').replace(/[^\d]/g, '');
+      if (!number) return undefined;
+      return `+${dial}${number}`;
+    }
+    if (!dto.phone) return undefined;
+    return dto.phone.startsWith('+') ? dto.phone : `+${dto.phone}`;
+  }
+
+  /**
+   * Resolves the 2-letter country code from the form's `country` input or an
+   * explicit `countryCode`. The form may submit either "US"/"US" or a dial code
+   * ("+20"); we only persist a normalized ISO 2-letter code.
+   */
+  private resolveCountryCode(dto: RegisterDto): string | undefined {
+    if (dto.countryCode) return dto.countryCode.toUpperCase();
+    if (dto.country && /^[A-Za-z]{2}$/.test(dto.country)) return dto.country.toUpperCase();
+    if (dto.dialCode) return DIAL_CODE_TO_COUNTRY[dto.dialCode.replace(/^\+/, '')];
+    return undefined;
   }
 
   async login(dto: LoginDto) {
