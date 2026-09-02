@@ -41,8 +41,8 @@ let AvailabilityService = class AvailabilityService {
         const slots = [];
         for (let t = start; t + duration <= end; t += step) {
             slots.push({
-                start: toHHMM(t),
-                end: toHHMM(t + duration),
+                start: (0, working_hours_util_1.toHHMM)(t),
+                end: (0, working_hours_util_1.toHHMM)(t + duration),
                 available: true,
             });
         }
@@ -57,21 +57,6 @@ let AvailabilityService = class AvailabilityService {
             return { ...slot, available: !overlaps };
         });
     }
-    async hasConflict(date, startTime, endTime) {
-        const start = toMinutes(startTime);
-        const end = toMinutes(endTime);
-        const existing = await this.bookingModel
-            .find({
-            date,
-            status: { $ne: booking_schema_1.BookingStatus.CANCELLED },
-        })
-            .exec();
-        return existing.some((booking) => {
-            const bStart = toMinutes(booking.startTime);
-            const bEnd = toMinutes(booking.endTime);
-            return start < bEnd && end > bStart;
-        });
-    }
 };
 exports.AvailabilityService = AvailabilityService;
 exports.AvailabilityService = AvailabilityService = __decorate([
@@ -81,20 +66,11 @@ exports.AvailabilityService = AvailabilityService = __decorate([
     __metadata("design:paramtypes", [mongoose_2.Model,
         mongoose_2.Model])
 ], AvailabilityService);
-function toMinutes(time) {
-    const [h, m] = time.split(':').map(Number);
-    return h * 60 + m;
-}
-function toHHMM(totalMinutes) {
-    const h = Math.floor(totalMinutes / 60);
-    const m = totalMinutes % 60;
-    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-}
 function timeOverlaps(slot, booking) {
-    const s = toMinutes(slot.start);
-    const e = toMinutes(slot.end);
-    const bs = toMinutes(booking.startTime);
-    const be = toMinutes(booking.endTime);
+    const s = (0, working_hours_util_1.toMinutes)(slot.start);
+    const e = (0, working_hours_util_1.toMinutes)(slot.end);
+    const bs = (0, working_hours_util_1.toMinutes)(booking.startTime);
+    const be = (0, working_hours_util_1.toMinutes)(booking.endTime);
     return s < be && e > bs;
 }
 //# sourceMappingURL=availability.service.js.map

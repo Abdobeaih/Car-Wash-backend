@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var AdminService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AdminService = void 0;
 const common_1 = require("@nestjs/common");
@@ -22,12 +23,14 @@ const service_schema_1 = require("../services/schemas/service.schema");
 const addon_schema_1 = require("../addons/schemas/addon.schema");
 const notifications_service_1 = require("../notifications/notifications.service");
 const roles_1 = require("../common/constants/roles");
-let AdminService = class AdminService {
+const slugify_1 = require("../common/utils/slugify");
+let AdminService = AdminService_1 = class AdminService {
     userModel;
     bookingModel;
     serviceModel;
     addOnModel;
     notificationsService;
+    logger = new common_1.Logger(AdminService_1.name);
     constructor(userModel, bookingModel, serviceModel, addOnModel, notificationsService) {
         this.userModel = userModel;
         this.bookingModel = bookingModel;
@@ -78,7 +81,7 @@ let AdminService = class AdminService {
         return this.serviceModel.find().sort({ createdAt: -1 }).exec();
     }
     async createService(dto) {
-        const slug = dto.slug ?? this.slugify(dto.name);
+        const slug = dto.slug ?? (0, slugify_1.slugify)(dto.name);
         const created = new this.serviceModel({ ...dto, slug });
         return created.save();
     }
@@ -119,7 +122,8 @@ let AdminService = class AdminService {
             query.status = status;
         let ids = [];
         if (search) {
-            const regex = new RegExp(search, 'i');
+            const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(escaped, 'i');
             const users = await this.userModel
                 .find({ $or: [{ name: regex }, { email: regex }] }, { _id: 1 })
                 .exec();
@@ -127,7 +131,7 @@ let AdminService = class AdminService {
             if (ids.length > 0)
                 query.customerId = { $in: ids };
             else
-                query._id = new mongoose_2.Types.ObjectId();
+                query._id = { $in: [] };
         }
         return this.bookingModel
             .find(query)
@@ -160,14 +164,20 @@ let AdminService = class AdminService {
             { path: 'addOnIds' },
         ]);
         if (previousStatus !== dto.status) {
-            await this.notificationsService.createBookingStatusNotification(booking.customerId, populated, dto.status);
+            try {
+                await this.notificationsService.createBookingStatusNotification(booking.customerId, populated, dto.status);
+            }
+            catch (err) {
+                this.logger.warn('Failed to create booking status notification', err);
+            }
         }
         return populated;
     }
     async getCustomers(search) {
         const query = { role: roles_1.UserRole.CUSTOMER };
         if (search) {
-            const regex = { $regex: search, $options: 'i' };
+            const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = { $regex: escaped, $options: 'i' };
             query.$or = [{ name: regex }, { email: regex }];
         }
         const customers = await this.userModel.find(query).sort({ createdAt: -1 }).lean().exec();
@@ -185,15 +195,9 @@ let AdminService = class AdminService {
             };
         }));
     }
-    slugify(text) {
-        return text
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/(^-|-$)/g, '');
-    }
 };
 exports.AdminService = AdminService;
-exports.AdminService = AdminService = __decorate([
+exports.AdminService = AdminService = AdminService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, mongoose_1.InjectModel)(user_schema_1.User.name)),
     __param(1, (0, mongoose_1.InjectModel)(booking_schema_1.Booking.name)),

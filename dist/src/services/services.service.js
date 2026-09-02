@@ -22,9 +22,6 @@ let ServicesService = class ServicesService {
     constructor(serviceModel) {
         this.serviceModel = serviceModel;
     }
-    async findAll() {
-        return this.serviceModel.find().sort({ basePrice: 1 }).exec();
-    }
     async findPublic() {
         return this.serviceModel.find({ isActive: true }).sort({ basePrice: 1 }).exec();
     }
@@ -37,39 +34,6 @@ let ServicesService = class ServicesService {
             throw new common_1.NotFoundException('Service not found.');
         }
         return service;
-    }
-    async create(dto) {
-        const slug = dto.slug ?? this.slugify(dto.name);
-        const existing = await this.serviceModel.findOne({ slug }).exec();
-        if (existing) {
-            throw new common_1.ConflictException('A service with this slug already exists.');
-        }
-        const created = new this.serviceModel({ ...dto, slug });
-        return created.save();
-    }
-    async update(id, dto) {
-        const existing = await this.serviceModel.findById(id).exec();
-        if (!existing) {
-            throw new common_1.NotFoundException('Service not found.');
-        }
-        const payload = { ...dto };
-        if (dto.name && !dto.slug) {
-            payload.slug = this.slugify(dto.name);
-        }
-        Object.assign(existing, payload);
-        return existing.save();
-    }
-    async remove(id) {
-        const result = await this.serviceModel.findByIdAndDelete(id).exec();
-        if (!result) {
-            throw new common_1.NotFoundException('Service not found.');
-        }
-    }
-    slugify(text) {
-        return text
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/(^-|-$)/g, '');
     }
 };
 exports.ServicesService = ServicesService;

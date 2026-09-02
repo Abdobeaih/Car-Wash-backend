@@ -11,5 +11,4 @@ export declare class AvailabilityService {
     private readonly bookingModel;
     constructor(serviceModel: Model<CarService>, bookingModel: Model<BookingDocument>);
     getAvailableSlots(date: string, serviceIds: string[]): Promise<TimeSlot[]>;
-    hasConflict(date: string, startTime: string, endTime: string): Promise<boolean>;
 }

@@ -33,8 +33,6 @@ export declare class UsersService {
         phone?: string;
     }): Promise<SafeUser | null>;
     updatePassword(id: string, password: string): Promise<void>;
-    setPasswordReset(id: string, tokenHash: string, expires: Date): Promise<void>;
-    clearPasswordReset(id: string): Promise<void>;
     markEmailVerified(id: string): Promise<void>;
     deleteUser(id: string): Promise<void>;
     verifyPassword(user: UserDocument, password: string): Promise<boolean>;

@@ -20,13 +20,14 @@ const passport_jwt_1 = require("passport-jwt");
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 const user_schema_1 = require("../../users/schemas/user.schema");
+const jwt_config_1 = require("../jwt.config");
 let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(passport_jwt_1.Strategy) {
     userModel;
     constructor(configService, userModel) {
         super({
             jwtFromRequest: passport_jwt_1.ExtractJwt.fromAuthHeaderAsBearerToken(),
             ignoreExpiration: false,
-            secretOrKey: configService.get('JWT_SECRET') ?? 'dev-secret',
+            secretOrKey: (0, jwt_config_1.resolveJwtSecret)(configService),
         });
         this.userModel = userModel;
     }

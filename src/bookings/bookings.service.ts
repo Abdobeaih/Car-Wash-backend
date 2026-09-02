@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -12,11 +13,13 @@ import { CarService } from '../services/schemas/service.schema';
 import { AddOn } from '../addons/schemas/addon.schema';
 import { Booking, BookingDocument, BookingStatus } from './schemas/booking.schema';
 import { CreateBookingDto } from './dto/create-booking.dto';
-import { workingStartMinutes, workingEndMinutes } from './working-hours.util';
+import { workingStartMinutes, workingEndMinutes, toMinutes, toHHMM } from './working-hours.util';
 import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class BookingsService {
+  private readonly logger = new Logger(BookingsService.name);
+
   constructor(
     @InjectModel(Booking.name) private readonly bookingModel: Model<BookingDocument>,
     @InjectModel(Vehicle.name) private readonly vehicleModel: Model<Vehicle>,
@@ -76,7 +79,7 @@ export class BookingsService {
     this.validateTimeWithinWorkingHours(dto.startTime, totalDuration);
 
     const endTime = this.computeEndTime(dto.startTime, totalDuration);
-    if (this.timeToMinutes(endTime) > workingEndMinutes()) {
+    if (toMinutes(endTime) > workingEndMinutes()) {
       throw new BadRequestException('The requested time is outside working hours.');
     }
 
@@ -120,7 +123,7 @@ export class BookingsService {
 
     const saved = await created.save();
     const populated = await this.populateBooking(saved);
-    await this.notificationsService.notifyAdminsOfNewBooking(populated);
+    await this.safeNotify(() => this.notificationsService.notifyAdminsOfNewBooking(populated));
     return populated;
   }
 
@@ -157,7 +160,7 @@ export class BookingsService {
     booking.status = BookingStatus.CANCELLED;
     const saved = await booking.save();
     const populated = await this.populateBooking(saved);
-    await this.notificationsService.notifyAdminsOfCancellation(populated);
+    await this.safeNotify(() => this.notificationsService.notifyAdminsOfCancellation(populated));
     return populated;
   }
 
@@ -173,6 +176,14 @@ export class BookingsService {
     }
   }
 
+  private async safeNotify(notify: () => Promise<void>): Promise<void> {
+    try {
+      await notify();
+    } catch (err) {
+      this.logger.error('Failed to notify about booking change', err as Error);
+    }
+  }
+
   private validateTimeWithinWorkingHours(startTime: string, duration: number): void {
     if (!/^\d{2}:\d{2}$/.test(startTime)) {
       throw new BadRequestException('Invalid start time.');
@@ -181,23 +192,14 @@ export class BookingsService {
     if (h < 9 || h > 17 || (h === 17 && m > 0)) {
       throw new BadRequestException('Time must be within working hours (09:00 - 18:00).');
     }
-    const start = this.timeToMinutes(startTime);
+    const start = toMinutes(startTime);
     if (start < workingStartMinutes() || start + duration > workingEndMinutes()) {
       throw new BadRequestException('Time must be within working hours (09:00 - 18:00).');
     }
   }
 
   private computeEndTime(startTime: string, duration: number): string {
-    const start = this.timeToMinutes(startTime);
-    const end = start + duration;
-    const h = Math.floor(end / 60);
-    const m = end % 60;
-    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-  }
-
-  private timeToMinutes(time: string): number {
-    const [h, m] = time.split(':').map(Number);
-    return h * 60 + m;
+    return toHHMM(toMinutes(startTime) + duration);
   }
 
   private async populateBooking(booking: BookingDocument): Promise<BookingDocument> {

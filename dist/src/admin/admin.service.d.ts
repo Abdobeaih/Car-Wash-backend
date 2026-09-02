@@ -14,6 +14,7 @@ export declare class AdminService {
     private readonly serviceModel;
     private readonly addOnModel;
     private readonly notificationsService;
+    private readonly logger;
     constructor(userModel: Model<UserDocument>, bookingModel: Model<BookingDocument>, serviceModel: Model<ServiceDocument>, addOnModel: Model<AddOnDocument>, notificationsService: NotificationsService);
     getDashboard(): Promise<{
         totalBookings: number;
@@ -183,5 +184,4 @@ export declare class AdminService {
         bookingCount: number;
         createdAt: Date | undefined;
     }[]>;
-    private slugify;
 }

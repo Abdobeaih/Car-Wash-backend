@@ -11,14 +11,15 @@ export declare class BookingsService {
     private readonly serviceModel;
     private readonly addOnModel;
     private readonly notificationsService;
+    private readonly logger;
     constructor(bookingModel: Model<BookingDocument>, vehicleModel: Model<Vehicle>, serviceModel: Model<CarService>, addOnModel: Model<AddOn>, notificationsService: NotificationsService);
     create(customerId: string, dto: CreateBookingDto): Promise<BookingDocument>;
     findAllForCustomer(customerId: string): Promise<BookingDocument[]>;
     findForCustomer(customerId: string, id: string): Promise<BookingDocument>;
     cancelForCustomer(customerId: string, id: string): Promise<BookingDocument>;
     private validateDate;
+    private safeNotify;
     private validateTimeWithinWorkingHours;
     private computeEndTime;
-    private timeToMinutes;
     private populateBooking;
 }

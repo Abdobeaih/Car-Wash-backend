@@ -22,29 +22,8 @@ let AddOnsService = class AddOnsService {
     constructor(addOnModel) {
         this.addOnModel = addOnModel;
     }
-    async findAll() {
-        return this.addOnModel.find().sort({ name: 1 }).exec();
-    }
     async findPublic() {
         return this.addOnModel.find({ isActive: true }).sort({ name: 1 }).exec();
-    }
-    async create(dto) {
-        const created = new this.addOnModel(dto);
-        return created.save();
-    }
-    async update(id, dto) {
-        const existing = await this.addOnModel.findById(id).exec();
-        if (!existing) {
-            throw new common_1.NotFoundException('Add-on not found.');
-        }
-        Object.assign(existing, dto);
-        return existing.save();
-    }
-    async remove(id) {
-        const result = await this.addOnModel.findByIdAndDelete(id).exec();
-        if (!result) {
-            throw new common_1.NotFoundException('Add-on not found.');
-        }
     }
 };
 exports.AddOnsService = AddOnsService;

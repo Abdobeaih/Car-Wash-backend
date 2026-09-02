@@ -116,6 +116,13 @@ export class SeedService implements OnApplicationBootstrap {
     const adminEmail = this.configService.get<string>('SEED_ADMIN_EMAIL') ?? 'admin@example.com';
     const adminPassword = this.configService.get<string>('SEED_ADMIN_PASSWORD') ?? 'AdminPass123!';
 
+    // Never create or update an admin with a fallback password in production:
+    // doing so would plant a known credential. Require explicit SEED_ADMIN_* vars.
+    if (process.env.NODE_ENV === 'production' && !this.configService.get('SEED_ADMIN_PASSWORD')) {
+      this.logger.warn('SEED_ADMIN_PASSWORD is not set. Skipping admin seeding in production.');
+      return;
+    }
+
     const existingAdmin = await this.userModel
       .findOne({ email: adminEmail })
       .select('+password')
@@ -151,13 +158,17 @@ export class SeedService implements OnApplicationBootstrap {
       this.configService.get<string>('SEED_CUSTOMER_EMAIL') ?? 'customer@example.com';
     const customerExists = await this.userModel.exists({ email: customerEmail });
     if (!customerExists) {
+      const customerPassword = this.configService.get<string>('SEED_CUSTOMER_PASSWORD');
+      if (process.env.NODE_ENV === 'production' && !customerPassword) {
+        this.logger.warn(
+          'SEED_CUSTOMER_PASSWORD is not set. Skipping customer seeding in production.',
+        );
+        return;
+      }
       await this.userModel.create({
         name: this.configService.get<string>('SEED_CUSTOMER_NAME') ?? 'Demo Customer',
         email: customerEmail,
-        password: await bcrypt.hash(
-          this.configService.get<string>('SEED_CUSTOMER_PASSWORD') ?? 'CustomerPass123!',
-          12,
-        ),
+        password: await bcrypt.hash(customerPassword ?? 'CustomerPass123!', 12),
         role: UserRole.CUSTOMER,
         emailVerified: true,
       });

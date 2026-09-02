@@ -3,7 +3,13 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CarService } from '../services/schemas/service.schema';
 import { Booking, BookingDocument, BookingStatus } from './schemas/booking.schema';
-import { slotMinutes, workingStartMinutes, workingEndMinutes } from './working-hours.util';
+import {
+  slotMinutes,
+  toMinutes,
+  toHHMM,
+  workingStartMinutes,
+  workingEndMinutes,
+} from './working-hours.util';
 
 export interface TimeSlot {
   start: string;
@@ -53,34 +59,6 @@ export class AvailabilityService {
       return { ...slot, available: !overlaps };
     });
   }
-
-  async hasConflict(date: string, startTime: string, endTime: string): Promise<boolean> {
-    const start = toMinutes(startTime);
-    const end = toMinutes(endTime);
-    const existing = await this.bookingModel
-      .find({
-        date,
-        status: { $ne: BookingStatus.CANCELLED },
-      })
-      .exec();
-
-    return existing.some((booking) => {
-      const bStart = toMinutes(booking.startTime);
-      const bEnd = toMinutes(booking.endTime);
-      return start < bEnd && end > bStart;
-    });
-  }
-}
-
-function toMinutes(time: string): number {
-  const [h, m] = time.split(':').map(Number);
-  return h * 60 + m;
-}
-
-function toHHMM(totalMinutes: number): string {
-  const h = Math.floor(totalMinutes / 60);
-  const m = totalMinutes % 60;
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
 function timeOverlaps(slot: TimeSlot, booking: Booking): boolean {

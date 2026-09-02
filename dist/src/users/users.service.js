@@ -102,16 +102,6 @@ let UsersService = class UsersService {
         const hashed = await bcrypt.hash(password, 12);
         await this.userModel.updateOne({ _id: id }, { $set: { password: hashed } }).exec();
     }
-    async setPasswordReset(id, tokenHash, expires) {
-        await this.userModel
-            .updateOne({ _id: id }, { $set: { passwordResetToken: tokenHash, passwordResetExpires: expires } })
-            .exec();
-    }
-    async clearPasswordReset(id) {
-        await this.userModel
-            .updateOne({ _id: id }, { $unset: { passwordResetToken: 1, passwordResetExpires: 1 } })
-            .exec();
-    }
     async markEmailVerified(id) {
         await this.userModel
             .updateOne({ _id: id }, { $set: { emailVerified: true, emailVerifiedAt: new Date() } })

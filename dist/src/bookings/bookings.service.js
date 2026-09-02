@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var BookingsService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BookingsService = void 0;
 const common_1 = require("@nestjs/common");
@@ -22,12 +23,13 @@ const addon_schema_1 = require("../addons/schemas/addon.schema");
 const booking_schema_1 = require("./schemas/booking.schema");
 const working_hours_util_1 = require("./working-hours.util");
 const notifications_service_1 = require("../notifications/notifications.service");
-let BookingsService = class BookingsService {
+let BookingsService = BookingsService_1 = class BookingsService {
     bookingModel;
     vehicleModel;
     serviceModel;
     addOnModel;
     notificationsService;
+    logger = new common_1.Logger(BookingsService_1.name);
     constructor(bookingModel, vehicleModel, serviceModel, addOnModel, notificationsService) {
         this.bookingModel = bookingModel;
         this.vehicleModel = vehicleModel;
@@ -77,7 +79,7 @@ let BookingsService = class BookingsService {
         this.validateDate(dto.date);
         this.validateTimeWithinWorkingHours(dto.startTime, totalDuration);
         const endTime = this.computeEndTime(dto.startTime, totalDuration);
-        if (this.timeToMinutes(endTime) > (0, working_hours_util_1.workingEndMinutes)()) {
+        if ((0, working_hours_util_1.toMinutes)(endTime) > (0, working_hours_util_1.workingEndMinutes)()) {
             throw new common_1.BadRequestException('The requested time is outside working hours.');
         }
         const conflicts = await this.bookingModel
@@ -116,7 +118,7 @@ let BookingsService = class BookingsService {
         });
         const saved = await created.save();
         const populated = await this.populateBooking(saved);
-        await this.notificationsService.notifyAdminsOfNewBooking(populated);
+        await this.safeNotify(() => this.notificationsService.notifyAdminsOfNewBooking(populated));
         return populated;
     }
     async findAllForCustomer(customerId) {
@@ -150,7 +152,7 @@ let BookingsService = class BookingsService {
         booking.status = booking_schema_1.BookingStatus.CANCELLED;
         const saved = await booking.save();
         const populated = await this.populateBooking(saved);
-        await this.notificationsService.notifyAdminsOfCancellation(populated);
+        await this.safeNotify(() => this.notificationsService.notifyAdminsOfCancellation(populated));
         return populated;
     }
     validateDate(date) {
@@ -164,6 +166,14 @@ let BookingsService = class BookingsService {
             throw new common_1.BadRequestException('Booking date cannot be in the past.');
         }
     }
+    async safeNotify(notify) {
+        try {
+            await notify();
+        }
+        catch (err) {
+            this.logger.error('Failed to notify about booking change', err);
+        }
+    }
     validateTimeWithinWorkingHours(startTime, duration) {
         if (!/^\d{2}:\d{2}$/.test(startTime)) {
             throw new common_1.BadRequestException('Invalid start time.');
@@ -172,21 +182,13 @@ let BookingsService = class BookingsService {
         if (h < 9 || h > 17 || (h === 17 && m > 0)) {
             throw new common_1.BadRequestException('Time must be within working hours (09:00 - 18:00).');
         }
-        const start = this.timeToMinutes(startTime);
+        const start = (0, working_hours_util_1.toMinutes)(startTime);
         if (start < (0, working_hours_util_1.workingStartMinutes)() || start + duration > (0, working_hours_util_1.workingEndMinutes)()) {
             throw new common_1.BadRequestException('Time must be within working hours (09:00 - 18:00).');
         }
     }
     computeEndTime(startTime, duration) {
-        const start = this.timeToMinutes(startTime);
-        const end = start + duration;
-        const h = Math.floor(end / 60);
-        const m = end % 60;
-        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-    }
-    timeToMinutes(time) {
-        const [h, m] = time.split(':').map(Number);
-        return h * 60 + m;
+        return (0, working_hours_util_1.toHHMM)((0, working_hours_util_1.toMinutes)(startTime) + duration);
     }
     async populateBooking(booking) {
         return this.bookingModel.populate(booking, [
@@ -199,7 +201,7 @@ let BookingsService = class BookingsService {
     }
 };
 exports.BookingsService = BookingsService;
-exports.BookingsService = BookingsService = __decorate([
+exports.BookingsService = BookingsService = BookingsService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, mongoose_1.InjectModel)(booking_schema_1.Booking.name)),
     __param(1, (0, mongoose_1.InjectModel)(vehicle_schema_1.Vehicle.name)),

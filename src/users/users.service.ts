@@ -78,21 +78,6 @@ export class UsersService {
     await this.userModel.updateOne({ _id: id }, { $set: { password: hashed } }).exec();
   }
 
-  async setPasswordReset(id: string, tokenHash: string, expires: Date): Promise<void> {
-    await this.userModel
-      .updateOne(
-        { _id: id },
-        { $set: { passwordResetToken: tokenHash, passwordResetExpires: expires } },
-      )
-      .exec();
-  }
-
-  async clearPasswordReset(id: string): Promise<void> {
-    await this.userModel
-      .updateOne({ _id: id }, { $unset: { passwordResetToken: 1, passwordResetExpires: 1 } })
-      .exec();
-  }
-
   async markEmailVerified(id: string): Promise<void> {
     await this.userModel
       .updateOne({ _id: id }, { $set: { emailVerified: true, emailVerifiedAt: new Date() } })

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { User, UserDocument } from '../users/schemas/user.schema';
@@ -10,9 +10,12 @@ import { CreateAddOnDto, UpdateAddOnDto } from '../addons/dto/addon.dto';
 import { UpdateBookingStatusDto } from './dto/update-booking-status.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 import { UserRole } from '../common/constants/roles';
+import { slugify } from '../common/utils/slugify';
 
 @Injectable()
 export class AdminService {
+  private readonly logger = new Logger(AdminService.name);
+
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     @InjectModel(Booking.name) private readonly bookingModel: Model<BookingDocument>,
@@ -68,7 +71,7 @@ export class AdminService {
   }
 
   async createService(dto: CreateServiceDto) {
-    const slug = dto.slug ?? this.slugify(dto.name);
+    const slug = dto.slug ?? slugify(dto.name);
     const created = new this.serviceModel({ ...dto, slug });
     return created.save();
   }
@@ -120,13 +123,14 @@ export class AdminService {
 
     let ids: Types.ObjectId[] = [];
     if (search) {
-      const regex = new RegExp(search, 'i');
+      const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(escaped, 'i');
       const users = await this.userModel
         .find({ $or: [{ name: regex }, { email: regex }] }, { _id: 1 })
         .exec();
       ids = users.map((u) => u._id as Types.ObjectId);
       if (ids.length > 0) query.customerId = { $in: ids };
-      else query._id = new Types.ObjectId(); // no matches
+      else query._id = { $in: [] }; // no matches
     }
 
     return this.bookingModel
@@ -163,11 +167,15 @@ export class AdminService {
     ]);
 
     if (previousStatus !== dto.status) {
-      await this.notificationsService.createBookingStatusNotification(
-        booking.customerId,
-        populated,
-        dto.status,
-      );
+      try {
+        await this.notificationsService.createBookingStatusNotification(
+          booking.customerId,
+          populated,
+          dto.status,
+        );
+      } catch (err) {
+        this.logger.warn('Failed to create booking status notification', err as Error);
+      }
     }
 
     return populated;
@@ -176,7 +184,8 @@ export class AdminService {
   async getCustomers(search?: string) {
     const query: Record<string, unknown> = { role: UserRole.CUSTOMER };
     if (search) {
-      const regex = { $regex: search, $options: 'i' } as unknown;
+      const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = { $regex: escaped, $options: 'i' } as unknown;
       query.$or = [{ name: regex }, { email: regex }];
     }
 
@@ -197,12 +206,5 @@ export class AdminService {
         };
       }),
     );
-  }
-
-  private slugify(text: string): string {
-    return text
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '');
   }
 }
