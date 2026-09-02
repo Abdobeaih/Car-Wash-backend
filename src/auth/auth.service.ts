@@ -78,11 +78,12 @@ export class AuthService {
       throw new BadRequestException('Passwords do not match.');
     }
 
-    const channel = dto.verificationChannel ?? OtpChannel.EMAIL;
+    // Registration verification is email-only. The phone number is stored as
+    // account data, but it is NEVER used for OTP/verification. The channel is
+    // forced to EMAIL regardless of any client-provided `verificationChannel`,
+    // so no SMS/phone OTP can be triggered through registration.
+    const channel = OtpChannel.EMAIL;
     const phone = this.resolvePhone(dto);
-    if (channel === OtpChannel.SMS && !phone) {
-      throw new BadRequestException('A phone number is required to receive the code by SMS.');
-    }
 
     const user = await this.usersService.create({
       name: dto.name,
@@ -95,12 +96,7 @@ export class AuthService {
     });
 
     try {
-      await this.otpService.requestOtp(
-        dto.email,
-        OtpPurpose.EMAIL_VERIFICATION,
-        channel,
-        channel === OtpChannel.SMS ? phone : undefined,
-      );
+      await this.otpService.requestOtp(dto.email, OtpPurpose.EMAIL_VERIFICATION, channel);
     } catch (err) {
       await this.usersService.deleteUser(user._id);
       throw err;
@@ -109,9 +105,7 @@ export class AuthService {
     return {
       user,
       message:
-        channel === OtpChannel.SMS
-          ? 'Account created. A verification code was sent by SMS. Please verify your account to log in.'
-          : 'Account created. A verification code was sent to your email. Please verify your email to log in.',
+        'Account created. A verification code was sent to your email. Please verify your email to log in.',
     };
   }
 
@@ -250,7 +244,7 @@ export class AuthService {
     return { message: 'Email verified successfully. You can now log in.' };
   }
 
-  async resendVerificationOtp(email: string, phone?: string) {
+  async resendVerificationOtp(email: string) {
     const user = await this.usersService.findByEmail(email);
     if (!user) {
       throw new NotFoundException('User not found.');
@@ -258,19 +252,8 @@ export class AuthService {
     if (user.emailVerified) {
       throw new BadRequestException('This email is already verified.');
     }
-    const channel = user.verificationChannel ?? OtpChannel.EMAIL;
-    const target = phone ?? user.phone;
-    if (channel === OtpChannel.SMS && !target) {
-      throw new BadRequestException(
-        'No phone number on file. Please update your profile to receive codes by SMS.',
-      );
-    }
-    await this.otpService.requestOtp(
-      email,
-      OtpPurpose.EMAIL_VERIFICATION,
-      channel,
-      channel === OtpChannel.SMS ? target : undefined,
-    );
-    return { message: 'A new verification code has been sent.' };
+    // Email-only verification: the code is always delivered to the account email.
+    await this.otpService.requestOtp(email, OtpPurpose.EMAIL_VERIFICATION, OtpChannel.EMAIL);
+    return { message: 'A new verification code has been sent to your email.' };
   }
 }

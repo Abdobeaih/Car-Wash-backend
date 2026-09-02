@@ -109,12 +109,11 @@ describe('AuthService', () => {
       'new@example.com',
       OtpPurpose.EMAIL_VERIFICATION,
       OtpChannel.EMAIL,
-      undefined,
     );
     expect(result).not.toHaveProperty('token');
   });
 
-  it('registers a user and sends the verification code by SMS', async () => {
+  it('registers with a phone but always verifies via email (no SMS OTP)', async () => {
     usersService.findByEmail.mockResolvedValue(null);
     usersService.create.mockResolvedValue({ _id: 'user-1', email: 'new@example.com' });
 
@@ -131,28 +130,44 @@ describe('AuthService', () => {
       expect.objectContaining({
         phone: '+14155552671',
         countryCode: 'US',
-        verificationChannel: OtpChannel.SMS,
+        verificationChannel: OtpChannel.EMAIL,
       }),
+    );
+    // OTP is delivered by email only, never via SMS.
+    expect(otpService.requestOtp).toHaveBeenCalledWith(
+      'new@example.com',
+      OtpPurpose.EMAIL_VERIFICATION,
+      OtpChannel.EMAIL,
+    );
+    expect(otpService.requestOtp).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      OtpChannel.SMS,
+      expect.anything(),
+    );
+    expect(result.message).toContain('email');
+  });
+
+  it('registers without a phone and still verifies via email', async () => {
+    usersService.findByEmail.mockResolvedValue(null);
+    usersService.create.mockResolvedValue({ _id: 'user-1', email: 'new@example.com' });
+
+    const result = await authService.register({
+      name: 'New User',
+      email: 'new@example.com',
+      password: 'password123',
+      verificationChannel: OtpChannel.SMS,
+    });
+
+    expect(usersService.create).toHaveBeenCalledWith(
+      expect.objectContaining({ verificationChannel: OtpChannel.EMAIL }),
     );
     expect(otpService.requestOtp).toHaveBeenCalledWith(
       'new@example.com',
       OtpPurpose.EMAIL_VERIFICATION,
-      OtpChannel.SMS,
-      '+14155552671',
+      OtpChannel.EMAIL,
     );
-    expect(result.message).toContain('SMS');
-  });
-
-  it('rejects SMS verification without a phone number', async () => {
-    await expect(
-      authService.register({
-        name: 'New User',
-        email: 'new@example.com',
-        password: 'password123',
-        verificationChannel: OtpChannel.SMS,
-      }),
-    ).rejects.toBeInstanceOf(BadRequestException);
-    expect(usersService.create).not.toHaveBeenCalled();
+    expect(result.message).toContain('email');
   });
 
   it('combines dialCode + phone into one normalized number (no duplicate +)', async () => {
@@ -179,7 +194,6 @@ describe('AuthService', () => {
       'new@example.com',
       OtpPurpose.EMAIL_VERIFICATION,
       OtpChannel.EMAIL,
-      undefined,
     );
   });
 
@@ -204,7 +218,6 @@ describe('AuthService', () => {
       'new@example.com',
       OtpPurpose.EMAIL_VERIFICATION,
       OtpChannel.EMAIL,
-      undefined,
     );
   });
 

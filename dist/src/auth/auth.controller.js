@@ -37,7 +37,7 @@ let AuthController = class AuthController {
         return this.authService.verifyEmail(dto.email, dto.otp);
     }
     resendVerification(dto) {
-        return this.authService.resendVerificationOtp(dto.email, dto.phone);
+        return this.authService.resendVerificationOtp(dto.email);
     }
     login(dto) {
         return this.authService.login(dto);
