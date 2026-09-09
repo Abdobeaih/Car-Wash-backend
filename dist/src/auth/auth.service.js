@@ -72,11 +72,13 @@ let AuthService = class AuthService {
             throw new common_1.BadRequestException('Passwords do not match.');
         }
         const channel = otp_schema_1.OtpChannel.EMAIL;
+        const phone = this.resolvePhone(dto);
         const user = await this.usersService.create({
             name: dto.name,
             email: dto.email,
             password: dto.password,
-            phone: dto.phone,
+            phone,
+            countryCode: this.resolveCountryCode(dto),
             verificationChannel: channel,
             role: roles_1.UserRole.CUSTOMER,
         });
