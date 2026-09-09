@@ -63,46 +63,51 @@ export class AuthService {
     private readonly otpService: OtpService,
   ) {}
 
-async register(dto: RegisterDto) {
-  const existing = await this.usersService.findByEmail(dto.email);
-  if (existing) {
-    throw new BadRequestException('An account with this email already exists.');
+  async register(dto: RegisterDto) {
+    const existing = await this.usersService.findByEmail(dto.email);
+    if (existing) {
+      throw new BadRequestException('An account with this email already exists.');
+    }
+
+    const role = dto.role === UserRole.ADMIN ? UserRole.ADMIN : UserRole.CUSTOMER;
+    if (role === UserRole.ADMIN) {
+      throw new BadRequestException('Admin accounts cannot be created through registration.');
+    }
+
+    if (dto.confirmPassword !== undefined && dto.confirmPassword !== dto.password) {
+      throw new BadRequestException('Passwords do not match.');
+    }
+
+    // Registration verification is email-only. The phone number is stored as
+    // account data, but it is NEVER used for OTP/verification. The channel is
+    // forced to EMAIL regardless of any client-provided `verificationChannel`,
+    // so no SMS/phone OTP can be triggered through registration.
+    const channel = OtpChannel.EMAIL;
+    const phone = this.resolvePhone(dto);
+
+    const user = await this.usersService.create({
+      name: dto.name,
+      email: dto.email,
+      password: dto.password,
+      phone,
+      countryCode: this.resolveCountryCode(dto),
+      verificationChannel: channel,
+      role: UserRole.CUSTOMER,
+    });
+
+    try {
+      await this.otpService.requestOtp(dto.email, OtpPurpose.EMAIL_VERIFICATION, channel);
+    } catch (err) {
+      await this.usersService.deleteUser(user._id);
+      throw err;
+    }
+
+    return {
+      user,
+      message:
+        'Account created. A verification code was sent to your email. Please verify your email to log in.',
+    };
   }
-
-  const role = dto.role === UserRole.ADMIN ? UserRole.ADMIN : UserRole.CUSTOMER;
-  if (role === UserRole.ADMIN) {
-    throw new BadRequestException('Admin accounts cannot be created through registration.');
-  }
-
-  if (dto.confirmPassword !== undefined && dto.confirmPassword !== dto.password) {
-    throw new BadRequestException('Passwords do not match.');
-  }
-
-  const channel = OtpChannel.EMAIL;
-
-  const user = await this.usersService.create({
-    name: dto.name,
-    email: dto.email,
-    password: dto.password,
-    phone: dto.phone,
-    countryCode: dto.country,
-    verificationChannel: channel,
-    role: UserRole.CUSTOMER,
-  });
-
-  try {
-    await this.otpService.requestOtp(dto.email, OtpPurpose.EMAIL_VERIFICATION, channel);
-  } catch (err) {
-    await this.usersService.deleteUser(user._id);
-    throw err;
-  }
-
-  return {
-    user,
-    message:
-      'Account created. A verification code was sent to your email. Please verify your email to log in.',
-  };
-}
 
   /**
    * Produces the canonical international phone number (e.g. "+20201234567890").
