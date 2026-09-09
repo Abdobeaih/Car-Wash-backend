@@ -78,7 +78,6 @@ async register(dto: RegisterDto) {
     throw new BadRequestException('Passwords do not match.');
   }
 
-  // Email is the only verification channel. Phone is stored as-is, no verification.
   const channel = OtpChannel.EMAIL;
 
   const user = await this.usersService.create({
@@ -86,6 +85,7 @@ async register(dto: RegisterDto) {
     email: dto.email,
     password: dto.password,
     phone: dto.phone,
+    countryCode: dto.country,
     verificationChannel: channel,
     role: UserRole.CUSTOMER,
   });
