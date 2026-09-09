@@ -14,9 +14,9 @@ const class_validator_1 = require("class-validator");
 const roles_1 = require("../../common/constants/roles");
 const otp_schema_1 = require("../../otp/schemas/otp.schema");
 class RegisterDto {
-    name;
-    email;
-    password;
+    'name';
+    'email';
+    'password';
     confirmPassword;
     country;
     dialCode;

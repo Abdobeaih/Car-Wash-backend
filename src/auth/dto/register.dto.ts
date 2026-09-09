@@ -5,14 +5,14 @@ import { OtpChannel } from '../../otp/schemas/otp.schema';
 export class RegisterDto {
   @IsString()
   @MinLength(2, { message: 'Name must be at least 2 characters' })
-  name: string;
+  'name': string;
 
   @IsEmail({}, { message: 'A valid email is required' })
-  email: string;
+  'email': string;
 
   @IsString()
   @MinLength(8, { message: 'Password must be at least 8 characters' })
-  password: string;
+  'password': string;
 
   @IsString()
   @IsOptional()
