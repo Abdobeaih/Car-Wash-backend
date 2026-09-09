@@ -160,11 +160,19 @@ describe('Global ValidationPipe (whitelist + forbidNonWhitelisted)', () => {
     expect(messages).toContain('Phone must be in international format');
   });
 
-  it('accepts a phone on the resend-verification request', async () => {
-    const payload = { email: 'new@example.com', phone: '+14155552671' };
+  it('accepts an email-only resend-verification request', async () => {
+    const payload = { email: 'new@example.com' };
     await expect(pipe.transform(payload, body(ResendVerificationDto))).resolves.toMatchObject({
-      phone: '+14155552671',
+      email: 'new@example.com',
     });
+  });
+
+  it('rejects a phone on the resend-verification request', async () => {
+    const messages = await validationMessages(
+      { email: 'new@example.com', phone: '+14155552671' },
+      ResendVerificationDto,
+    );
+    expect(messages).toContain('property phone should not exist');
   });
 
   it('accepts the full registration form (country + dialCode + phone + confirmPassword)', async () => {
