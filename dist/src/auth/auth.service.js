@@ -68,9 +68,6 @@ let AuthService = class AuthService {
         if (role === roles_1.UserRole.ADMIN) {
             throw new common_1.BadRequestException('Admin accounts cannot be created through registration.');
         }
-        if (dto.confirmPassword !== undefined && dto.confirmPassword !== dto.password) {
-            throw new common_1.BadRequestException('Passwords do not match.');
-        }
         const channel = otp_schema_1.OtpChannel.EMAIL;
         const phone = this.resolvePhone(dto);
         const user = await this.usersService.create({

@@ -74,10 +74,6 @@ export class AuthService {
       throw new BadRequestException('Admin accounts cannot be created through registration.');
     }
 
-    if (dto.confirmPassword !== undefined && dto.confirmPassword !== dto.password) {
-      throw new BadRequestException('Passwords do not match.');
-    }
-
     // Registration verification is email-only. The phone number is stored as
     // account data, but it is NEVER used for OTP/verification. The channel is
     // forced to EMAIL regardless of any client-provided `verificationChannel`,

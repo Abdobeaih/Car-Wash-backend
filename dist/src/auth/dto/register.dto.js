@@ -14,10 +14,9 @@ const class_validator_1 = require("class-validator");
 const roles_1 = require("../../common/constants/roles");
 const otp_schema_1 = require("../../otp/schemas/otp.schema");
 class RegisterDto {
-    'name';
-    'email';
-    'password';
-    confirmPassword;
+    name;
+    email;
+    password;
     country;
     dialCode;
     phone;
@@ -40,11 +39,6 @@ __decorate([
     (0, class_validator_1.MinLength)(8, { message: 'Password must be at least 8 characters' }),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "password", void 0);
-__decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", String)
-], RegisterDto.prototype, "confirmPassword", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.Matches)(/^[A-Za-z ]{2,}$/, { message: 'Country must be a valid country name or 2-letter code' }),

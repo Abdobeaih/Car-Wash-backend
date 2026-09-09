@@ -79,12 +79,11 @@ describe('Global ValidationPipe (whitelist + forbidNonWhitelisted)', () => {
 
   it('accepts the exact current frontend register payload (intl phone + countryCode)', async () => {
     // Mirrors what src/app/register/page.tsx sends when the country list loads:
-    // separate country/dialCode/national-phone fields plus confirmPassword.
+    // separate country/dialCode/national-phone fields.
     const payload = {
       name: 'New User',
       email: 'new@example.com',
       password: 'password123',
-      confirmPassword: 'password123',
       verificationChannel: OtpChannel.EMAIL,
       country: 'Egypt',
       dialCode: '+20',
@@ -105,7 +104,6 @@ describe('Global ValidationPipe (whitelist + forbidNonWhitelisted)', () => {
       name: 'New User',
       email: 'new@example.com',
       password: 'password123',
-      confirmPassword: 'password123',
       verificationChannel: OtpChannel.EMAIL,
       phone: '+20201234567890',
       countryCode: 'EG',
@@ -175,12 +173,11 @@ describe('Global ValidationPipe (whitelist + forbidNonWhitelisted)', () => {
     expect(messages).toContain('property phone should not exist');
   });
 
-  it('accepts the full registration form (country + dialCode + phone + confirmPassword)', async () => {
+  it('accepts the full registration form (country + dialCode + phone)', async () => {
     const payload = {
       name: 'New User',
       email: 'new@example.com',
       password: 'password123',
-      confirmPassword: 'password123',
       country: 'Egypt',
       dialCode: '+20',
       phone: '201234567890',
@@ -189,11 +186,23 @@ describe('Global ValidationPipe (whitelist + forbidNonWhitelisted)', () => {
       name: 'New User',
       email: 'new@example.com',
       password: 'password123',
-      confirmPassword: 'password123',
       country: 'Egypt',
       dialCode: '+20',
       phone: '201234567890',
     });
+  });
+
+  it('rejects confirmPassword on registration (password matching is client-side)', async () => {
+    const messages = await validationMessages(
+      {
+        name: 'New User',
+        email: 'new@example.com',
+        password: 'password123',
+        confirmPassword: 'password123',
+      },
+      RegisterDto,
+    );
+    expect(messages).toContain('property confirmPassword should not exist');
   });
 
   it('rejects an unknown field on the registration form (strict validation kept)', async () => {

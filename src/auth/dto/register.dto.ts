@@ -14,10 +14,6 @@ export class RegisterDto {
   @MinLength(8, { message: 'Password must be at least 8 characters' })
   password: string;
 
-  @IsString()
-  @IsOptional()
-  confirmPassword?: string;
-
   @IsOptional()
   @Matches(/^[A-Za-z ]{2,}$/, { message: 'Country must be a valid country name or 2-letter code' })
   country?: string;
