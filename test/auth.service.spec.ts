@@ -69,6 +69,30 @@ describe('AuthService', () => {
     expect(result.user.role).toBe(UserRole.CUSTOMER);
   });
 
+  it('returns the saved phone number on login', async () => {
+    usersService.findByEmail.mockResolvedValue({
+      ...userRecord,
+      phone: '+14155552671',
+      countryCode: 'US',
+    });
+    usersService.verifyPassword.mockResolvedValue(true);
+
+    const result = await authService.login({ email: 'test@example.com', password: 'password123' });
+    expect(result.user.phone).toBe('+14155552671');
+    expect(result.user.countryCode).toBe('US');
+  });
+
+  it('returns the saved phone number for the current user', async () => {
+    usersService.findById.mockResolvedValue({
+      _id: 'user-1',
+      phone: '+14155552671',
+      countryCode: 'US',
+    });
+
+    const result = await authService.getCurrentUser('user-1');
+    expect(result).toMatchObject({ phone: '+14155552671', countryCode: 'US' });
+  });
+
   it('rejects login for an unverified email', async () => {
     usersService.findByEmail.mockResolvedValue({ ...userRecord, emailVerified: false });
     usersService.verifyPassword.mockResolvedValue(true);

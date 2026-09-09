@@ -7,6 +7,7 @@ export interface SafeUser {
     name: string;
     email: string;
     phone?: string;
+    countryCode?: string;
     role: UserRole;
     emailVerified: boolean;
     createdAt?: Date;

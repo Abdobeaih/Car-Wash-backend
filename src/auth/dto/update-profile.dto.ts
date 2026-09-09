@@ -11,7 +11,7 @@ export class UpdateProfileDto {
   email?: string;
 
   @IsOptional()
-  @Matches(/^\+[1-9]\d{1,14}$/, {
+  @Matches(/^\+?[1-9]\d{4,14}$/, {
     message: 'Phone must be in international format, e.g. +14155552671',
   })
   phone?: string;

@@ -26,6 +26,8 @@ export declare class AuthController {
             _id: string;
             name: string;
             email: string;
+            phone: string | undefined;
+            countryCode: string | undefined;
             role: import("../common/constants/roles").UserRole;
             emailVerified: boolean;
         };

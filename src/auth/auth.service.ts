@@ -160,6 +160,8 @@ export class AuthService {
         _id: user._id.toString(),
         name: user.name,
         email: user.email,
+        phone: user.phone,
+        countryCode: user.countryCode,
         role: user.role,
         emailVerified: true,
       },

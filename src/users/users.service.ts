@@ -11,6 +11,7 @@ export interface SafeUser {
   name: string;
   email: string;
   phone?: string;
+  countryCode?: string;
   role: UserRole;
   emailVerified: boolean;
   createdAt?: Date;
@@ -98,6 +99,7 @@ export class UsersService {
       name: user.name,
       email: user.email,
       phone: user.phone,
+      countryCode: user.countryCode,
       role: user.role,
       emailVerified: user.emailVerified,
       createdAt: user.createdAt,

@@ -24,6 +24,8 @@ export declare class AuthService {
             _id: string;
             name: string;
             email: string;
+            phone: string | undefined;
+            countryCode: string | undefined;
             role: UserRole;
             emailVerified: boolean;
         };

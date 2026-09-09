@@ -78,11 +78,36 @@ describe('Global ValidationPipe (whitelist + forbidNonWhitelisted)', () => {
   });
 
   it('accepts the exact current frontend register payload (intl phone + countryCode)', async () => {
+    // Mirrors what src/app/register/page.tsx sends when the country list loads:
+    // separate country/dialCode/national-phone fields plus confirmPassword.
     const payload = {
       name: 'New User',
       email: 'new@example.com',
-      phone: '+20201234567890',
       password: 'password123',
+      confirmPassword: 'password123',
+      verificationChannel: OtpChannel.EMAIL,
+      country: 'Egypt',
+      dialCode: '+20',
+      phone: '1012345678',
+      countryCode: 'EG',
+    };
+    await expect(pipe.transform(payload, body(RegisterDto))).resolves.toMatchObject({
+      name: 'New User',
+      email: 'new@example.com',
+      phone: '1012345678',
+      password: 'password123',
+      countryCode: 'EG',
+    });
+  });
+
+  it('accepts the frontend register fallback payload (full intl phone, no dialCode)', async () => {
+    const payload = {
+      name: 'New User',
+      email: 'new@example.com',
+      password: 'password123',
+      confirmPassword: 'password123',
+      verificationChannel: OtpChannel.EMAIL,
+      phone: '+20201234567890',
       countryCode: 'EG',
     };
     await expect(pipe.transform(payload, body(RegisterDto))).resolves.toMatchObject({
@@ -92,6 +117,14 @@ describe('Global ValidationPipe (whitelist + forbidNonWhitelisted)', () => {
       password: 'password123',
       countryCode: 'EG',
     });
+  });
+
+  it('rejects a malformed phone on registration', async () => {
+    const messages = await validationMessages(
+      { name: 'New User', email: 'new@example.com', password: 'password123', phone: 'abc' },
+      RegisterDto,
+    );
+    expect(messages).toContain('Phone must be a valid international or national number');
   });
 
   it('accepts the register email payload without phone', async () => {

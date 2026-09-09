@@ -119,6 +119,7 @@ let UsersService = class UsersService {
             name: user.name,
             email: user.email,
             phone: user.phone,
+            countryCode: user.countryCode,
             role: user.role,
             emailVerified: user.emailVerified,
             createdAt: user.createdAt,
