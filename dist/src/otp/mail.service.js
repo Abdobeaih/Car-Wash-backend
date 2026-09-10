@@ -21,6 +21,7 @@ let MailService = MailService_1 = class MailService {
     logger = new common_1.Logger(MailService_1.name);
     transporter;
     from;
+    devLogOtp;
     constructor(configService) {
         this.configService = configService;
         const host = this.configService.get('SMTP_HOST') ?? 'smtp.gmail.com';
@@ -30,6 +31,7 @@ let MailService = MailService_1 = class MailService {
         this.from =
             this.configService.get('MAIL_FROM') ??
                 (user ? `${DEFAULT_FROM_NAME} <${user}>` : DEFAULT_FROM_NAME);
+        this.devLogOtp = this.configService.get('SMTP_LOG_OTP') === 'true';
         this.transporter =
             user && pass
                 ? (0, nodemailer_1.createTransport)({
@@ -40,20 +42,45 @@ let MailService = MailService_1 = class MailService {
                 })
                 : null;
     }
+    async onModuleInit() {
+        if (!this.transporter) {
+            this.logger.warn('SMTP is not configured (SMTP_USER/SMTP_PASS missing). OTP emails will not be sent.');
+            return;
+        }
+        try {
+            await this.transporter.verify();
+            this.logger.log('SMTP connection verified successfully.');
+        }
+        catch (err) {
+            this.logger.error('SMTP connection verification failed. Check SMTP_USER/SMTP_PASS (Gmail requires an App Password).', err);
+        }
+    }
+    async onModuleDestroy() {
+        if (this.transporter) {
+            await this.transporter.close();
+        }
+    }
     async sendOtpEmail({ to, purpose, otp, expiresInMinutes }) {
         const subject = purpose === 'reset' ? 'Reset your password' : 'Verify your email';
         const text = this.buildText(purpose, otp, expiresInMinutes);
         if (!this.transporter) {
             this.logger.warn('SMTP is not configured (SMTP_USER/SMTP_PASS). Email for ' + to + ' was not sent.');
-            throw new otp_errors_1.OtpException(otp_errors_1.OtpErrorCode.EMAIL_SEND_FAILED, 'Unable to send the verification email. Please try again later.');
+            return this.handleDeliveryFailure('SMTP is not configured', to, otp);
         }
         try {
             await this.transporter.sendMail({ from: this.from, to, subject, text });
         }
         catch (err) {
             this.logger.error('Unexpected email send failure', err);
-            throw new otp_errors_1.OtpException(otp_errors_1.OtpErrorCode.EMAIL_SEND_FAILED, 'Unable to send the verification email. Please try again later.');
+            return this.handleDeliveryFailure('email send failed', to, otp);
         }
+    }
+    handleDeliveryFailure(reason, to, otp) {
+        if (this.devLogOtp && process.env.NODE_ENV !== 'production') {
+            this.logger.warn(`[dev] Email delivery unavailable (${reason}). OTP for ${to}: ${otp}`);
+            return;
+        }
+        throw new otp_errors_1.OtpException(otp_errors_1.OtpErrorCode.EMAIL_SEND_FAILED, 'Unable to send the verification email. Please try again later.');
     }
     buildText(purpose, otp, expiresInMinutes) {
         const intro = purpose === 'reset'

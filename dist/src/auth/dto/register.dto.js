@@ -17,6 +17,7 @@ class RegisterDto {
     name;
     email;
     password;
+    confirmPassword;
     country;
     dialCode;
     phone;
@@ -41,7 +42,13 @@ __decorate([
 ], RegisterDto.prototype, "password", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.Matches)(/^[A-Za-z ]{2,}$/, { message: 'Country must be a valid country name or 2-letter code' }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], RegisterDto.prototype, "confirmPassword", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MinLength)(2, { message: 'Country must be at least 2 characters' }),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "country", void 0);
 __decorate([
@@ -53,14 +60,14 @@ __decorate([
 ], RegisterDto.prototype, "dialCode", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.Matches)(/^\+?[1-9]\d{4,14}$/, {
+    (0, class_validator_1.Matches)(/^\+?\d{4,15}$/, {
         message: 'Phone must be a valid international or national number',
     }),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "phone", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.Matches)(/^[A-Z]{2}$/, { message: 'Country code must be 2 letters, e.g. US' }),
+    (0, class_validator_1.Matches)(/^[A-Za-z]{2}$/, { message: 'Country code must be 2 letters, e.g. US' }),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "countryCode", void 0);
 __decorate([

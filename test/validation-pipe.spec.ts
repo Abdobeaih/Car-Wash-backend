@@ -54,7 +54,7 @@ describe('Global ValidationPipe (whitelist + forbidNonWhitelisted)', () => {
 
   it('rejects a malformed phone on profile update', async () => {
     const messages = await validationMessages({ phone: 'abc' }, UpdateProfileDto);
-    expect(messages).toContain('Phone must be in international format');
+    expect(messages).toContain('Phone must be a valid international or national number');
   });
 
   it('still rejects unknown fields (no policy change)', async () => {
@@ -192,17 +192,23 @@ describe('Global ValidationPipe (whitelist + forbidNonWhitelisted)', () => {
     });
   });
 
-  it('rejects confirmPassword on registration (password matching is client-side)', async () => {
-    const messages = await validationMessages(
-      {
-        name: 'New User',
-        email: 'new@example.com',
-        password: 'password123',
-        confirmPassword: 'password123',
-      },
-      RegisterDto,
-    );
-    expect(messages).toContain('property confirmPassword should not exist');
+  it('accepts confirmPassword on registration when provided', async () => {
+    const payload = {
+      name: 'New User',
+      email: 'new@example.com',
+      password: 'password123',
+      confirmPassword: 'password123',
+      country: 'Egypt',
+      dialCode: '+20',
+      phone: '01012345678',
+    };
+    await expect(pipe.transform(payload, body(RegisterDto))).resolves.toMatchObject({
+      name: 'New User',
+      email: 'new@example.com',
+      password: 'password123',
+      confirmPassword: 'password123',
+      phone: '01012345678',
+    });
   });
 
   it('rejects an unknown field on the registration form (strict validation kept)', async () => {

@@ -7,7 +7,7 @@ import { UsersService } from '../src/users/users.service';
 import { OtpService } from '../src/otp/otp.service';
 import { OtpPurpose } from '../src/otp/schemas/otp.schema';
 import { JwtService } from '@nestjs/jwt';
-import { NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { UserRole } from '../src/common/constants/roles';
 import { OtpChannel } from '../src/otp/schemas/otp.schema';
 
@@ -241,6 +241,38 @@ describe('AuthService', () => {
       OtpPurpose.EMAIL_VERIFICATION,
       OtpChannel.EMAIL,
     );
+  });
+
+  it('rejects registration when confirmPassword does not match password', async () => {
+    usersService.findByEmail.mockResolvedValue(null);
+
+    await expect(
+      authService.register({
+        name: 'New User',
+        email: 'new@example.com',
+        password: 'password123',
+        confirmPassword: 'different123',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(usersService.create).not.toHaveBeenCalled();
+  });
+
+  it('strips leading 0 from national phone when combining with dialCode', async () => {
+    usersService.findByEmail.mockResolvedValue(null);
+    usersService.create.mockResolvedValue({ _id: 'user-1', email: 'egypt@example.com' });
+
+    await authService.register({
+      name: 'Egypt User',
+      email: 'egypt@example.com',
+      password: 'password123',
+      confirmPassword: 'password123',
+      country: 'Egypt',
+      dialCode: '+20',
+      phone: '01012345678',
+    });
+
+    const createArg = usersService.create.mock.calls[0][0];
+    expect(createArg.phone).toBe('+201012345678');
   });
 
   it('rolls back the user when the OTP email fails to send', async () => {

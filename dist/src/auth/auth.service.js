@@ -60,6 +60,9 @@ let AuthService = class AuthService {
         this.otpService = otpService;
     }
     async register(dto) {
+        if (dto.confirmPassword && dto.confirmPassword !== dto.password) {
+            throw new common_1.BadRequestException('Passwords do not match.');
+        }
         const existing = await this.usersService.findByEmail(dto.email);
         if (existing) {
             throw new common_1.BadRequestException('An account with this email already exists.');
@@ -94,9 +97,12 @@ let AuthService = class AuthService {
     resolvePhone(dto) {
         if (dto.dialCode) {
             const dial = dto.dialCode.replace(/^\+/, '');
-            const number = (dto.phone ?? '').replace(/^\+/, '').replace(/[^\d]/g, '');
+            let number = (dto.phone ?? '').replace(/^\+/, '').replace(/[^\d]/g, '');
             if (!number)
                 return undefined;
+            if (number.length > 5 && number.startsWith('0')) {
+                number = number.replace(/^0+/, '');
+            }
             return `+${dial}${number}`;
         }
         if (!dto.phone)

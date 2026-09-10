@@ -30,8 +30,8 @@ __decorate([
 ], UpdateProfileDto.prototype, "email", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.Matches)(/^\+?[1-9]\d{4,14}$/, {
-        message: 'Phone must be in international format, e.g. +14155552671',
+    (0, class_validator_1.Matches)(/^\+?\d{4,15}$/, {
+        message: 'Phone must be a valid international or national number',
     }),
     __metadata("design:type", String)
 ], UpdateProfileDto.prototype, "phone", void 0);

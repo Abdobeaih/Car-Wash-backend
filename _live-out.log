@@ -1,0 +1,95 @@
+[32m✔[0m [33mConsole Ninja[0m extension is connected to [33mNest.js[0m, see [36mhttps://tinyurl.com/2vt8jxzw[0m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMongooseModule dependencies initialized[39m[38;5;3m +66ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPassportModule dependencies initialized[39m[38;5;3m +2ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +3ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mThrottlerModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +4ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mJwtModule dependencies initialized[39m[38;5;3m +43ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMongooseCoreModule dependencies initialized[39m[38;5;3m +101ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mHealthModule dependencies initialized[39m[38;5;3m +12ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMongooseModule dependencies initialized[39m[38;5;3m +2ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMongooseModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMongooseModule dependencies initialized[39m[38;5;3m +2ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMongooseModule dependencies initialized[39m[38;5;3m +2ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMongooseModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMongooseModule dependencies initialized[39m[38;5;3m +3ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMongooseModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMongooseModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMongooseModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMongooseModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mUsersModule dependencies initialized[39m[38;5;3m +3ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mSeedModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mOtpModule dependencies initialized[39m[38;5;3m +3ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mServicesModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAddOnsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mVehiclesModule dependencies initialized[39m[38;5;3m +4ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mNotificationsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mBookingsModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAdminModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mContactModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +17ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/register, POST} route[39m[38;5;3m +8ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/verify-email, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/resend-verification, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/login, POST} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/logout, POST} route[39m[38;5;3m +6ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/me, GET} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/me, PATCH} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/change-password, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/forgot-password, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/reset-password, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mOtpController {/auth}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/send-otp, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/verify-otp, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/resend-otp, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mServicesController {/services}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/services, GET} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/services/:slug, GET} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAddOnsController {/add-ons}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/add-ons, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mVehiclesController {/vehicles}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/vehicles, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/vehicles, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/vehicles/:id, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/vehicles/:id, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/vehicles/:id, DELETE} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mBookingsController {/}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/availability, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/bookings, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/bookings, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/bookings/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/bookings/:id/cancel, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mNotificationsController {/notifications}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/notifications, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/notifications/unread-count, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/notifications/read-all, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/notifications/:id/read, PATCH} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAdminController {/admin}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/dashboard, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/calendar, GET} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/services, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/services, POST} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/services/:id, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/services/:id, DELETE} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/add-ons, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/add-ons, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/add-ons/:id, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/add-ons/:id, DELETE} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/bookings, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/bookings/:id, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/bookings/:id/status, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/customers, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mContactController {/}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/contact, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/messages, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/messages/unread-count, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/messages/:id/read, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mHealthController {/health}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٣ م [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/health, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٥ م [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +1125ms[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٥ م [32m    LOG[39m [38;5;3m[Bootstrap] [39m[32mAPI running at http://localhost:3001[39m
+[32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٥ م [32m    LOG[39m [38;5;3m[Bootstrap] [39m[32mHealth check at http://localhost:3001/health[39m

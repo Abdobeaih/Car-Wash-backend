@@ -104,4 +104,23 @@ describe('MailService', () => {
 
     expect(createTransport.mock.calls.length).toBe(countsAfterConfigured);
   });
+
+  it('logs the OTP instead of failing when SMTP_LOG_OTP is enabled in dev', async () => {
+    mailService = new MailService(makeConfig({ SMTP_PASS: '', SMTP_LOG_OTP: 'true' }));
+    const previousNodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'development';
+
+    try {
+      await mailService.sendOtpEmail({
+        to: 'dev@example.com',
+        purpose: 'verify',
+        otp: '654321',
+        expiresInMinutes: 10,
+      });
+    } finally {
+      process.env.NODE_ENV = previousNodeEnv;
+    }
+
+    expect(nodemailer.createTransport).not.toHaveBeenCalled();
+  });
 });
