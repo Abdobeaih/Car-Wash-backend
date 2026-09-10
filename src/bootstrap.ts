@@ -1,10 +1,16 @@
 import { INestApplication, ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 
 async function configureApp(app: INestApplication): Promise<void> {
   const config = app.get(ConfigService);
+
+  // Security headers: disable X-Powered-By, enable X-Content-Type-Options,
+  // frame/cross-origin protection. Content-Security-Policy is left at helmet's
+  // default permissive baseline to avoid breaking the frontend dashboard.
+  app.use(helmet());
 
   const origins = new Set<string>(
     (config.get<string>('CORS_ORIGINS') ?? 'http://localhost:3000')

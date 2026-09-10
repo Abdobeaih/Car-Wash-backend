@@ -15,7 +15,12 @@ export class RegisterDto {
   password: string;
 
   @IsOptional()
-  @Matches(/^[A-Za-z ]{2,}$/, { message: 'Country must be a valid country name or 2-letter code' })
+  @IsString()
+  confirmPassword?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(2, { message: 'Country must be at least 2 characters' })
   country?: string;
 
   @IsOptional()
@@ -26,15 +31,15 @@ export class RegisterDto {
 
   // `phone` is accepted in two forms for backward compatibility:
   //  - full international, e.g. "+14155552671", or
-  //  - a national number, e.g. "201234567890", that is combined with `dialCode`.
+  //  - a national number, e.g. "01012345678" or "201234567890", that is combined with `dialCode`.
   @IsOptional()
-  @Matches(/^\+?[1-9]\d{4,14}$/, {
+  @Matches(/^\+?\d{4,15}$/, {
     message: 'Phone must be a valid international or national number',
   })
   phone?: string;
 
   @IsOptional()
-  @Matches(/^[A-Z]{2}$/, { message: 'Country code must be 2 letters, e.g. US' })
+  @Matches(/^[A-Za-z]{2}$/, { message: 'Country code must be 2 letters, e.g. US' })
   countryCode?: string;
 
   @IsOptional()

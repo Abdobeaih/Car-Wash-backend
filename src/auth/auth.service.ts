@@ -64,6 +64,10 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
+    if (dto.confirmPassword && dto.confirmPassword !== dto.password) {
+      throw new BadRequestException('Passwords do not match.');
+    }
+
     const existing = await this.usersService.findByEmail(dto.email);
     if (existing) {
       throw new BadRequestException('An account with this email already exists.');
@@ -106,16 +110,20 @@ export class AuthService {
   }
 
   /**
-   * Produces the canonical international phone number (e.g. "+20201234567890").
-   * The frontend submits `dialCode` (e.g. "+20") and `phone` (e.g. "201234567890")
+   * Produces the canonical international phone number (e.g. "+20201234567890" or "+201012345678").
+   * The frontend submits `dialCode` (e.g. "+20") and `phone` (e.g. "01012345678" or "201234567890")
    * separately; this joins them exactly once so we never store "+20+20..." and
-   * never lose the "+". A single full-international `phone` is kept as-is.
+   * never lose the "+". Any national leading trunk zero (e.g. "010...") is stripped before joining.
+   * A single full-international `phone` is kept as-is.
    */
   private resolvePhone(dto: RegisterDto): string | undefined {
     if (dto.dialCode) {
       const dial = dto.dialCode.replace(/^\+/, '');
-      const number = (dto.phone ?? '').replace(/^\+/, '').replace(/[^\d]/g, '');
+      let number = (dto.phone ?? '').replace(/^\+/, '').replace(/[^\d]/g, '');
       if (!number) return undefined;
+      if (number.length > 5 && number.startsWith('0')) {
+        number = number.replace(/^0+/, '');
+      }
       return `+${dial}${number}`;
     }
     if (!dto.phone) return undefined;

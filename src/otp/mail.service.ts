@@ -1,6 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createTransport } from 'nodemailer';
+import { createTransport, type Transporter } from 'nodemailer';
 import { OtpErrorCode, OtpException } from './otp-errors';
 
 export interface OtpEmailPayload {
@@ -13,9 +13,9 @@ export interface OtpEmailPayload {
 const DEFAULT_FROM_NAME = 'Mobile Car Care';
 
 @Injectable()
-export class MailService {
+export class MailService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(MailService.name);
-  private readonly transporter: ReturnType<typeof createTransport> | null;
+  private readonly transporter: Transporter | null;
   private readonly from: string;
 
   constructor(private readonly configService: ConfigService) {
@@ -39,6 +39,35 @@ export class MailService {
             auth: { user, pass },
           })
         : null;
+  }
+
+  /**
+   * Verifies the SMTP connection at startup so misconfiguration is surfaced early
+   * (e.g. an invalid Gmail App Password). The failure is logged, never thrown:
+   * the API must still boot so an unrelated restart does not take the app down.
+   */
+  async onModuleInit(): Promise<void> {
+    if (!this.transporter) {
+      this.logger.warn(
+        'SMTP is not configured (SMTP_USER/SMTP_PASS missing). OTP emails will not be sent.',
+      );
+      return;
+    }
+    try {
+      await this.transporter.verify();
+      this.logger.log('SMTP connection verified successfully.');
+    } catch (err) {
+      this.logger.error(
+        'SMTP connection verification failed. Check SMTP_USER/SMTP_PASS (Gmail requires an App Password).',
+        err as Error,
+      );
+    }
+  }
+
+  async onModuleDestroy(): Promise<void> {
+    if (this.transporter) {
+      await this.transporter.close();
+    }
   }
 
   async sendOtpEmail({ to, purpose, otp, expiresInMinutes }: OtpEmailPayload): Promise<void> {

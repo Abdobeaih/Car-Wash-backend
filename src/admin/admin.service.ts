@@ -191,20 +191,22 @@ export class AdminService {
 
     const customers = await this.userModel.find(query).sort({ createdAt: -1 }).lean().exec();
 
-    return Promise.all(
-      customers.map(async (c) => {
-        const bookingCount = await this.bookingModel.countDocuments({
-          customerId: c._id.toString(),
-        });
-        return {
-          _id: c._id.toString(),
-          name: c.name,
-          email: c.email,
-          role: c.role,
-          bookingCount,
-          createdAt: c.createdAt,
-        };
-      }),
-    );
+    // Single aggregation replaces the N+1 countDocuments-per-customer pattern.
+    const counts = await this.bookingModel
+      .aggregate<{ _id: string; count: number }>([
+        { $match: { customerId: { $in: customers.map((c) => c._id) } } },
+        { $group: { _id: '$customerId', count: { $sum: 1 } } },
+      ])
+      .exec();
+    const countByCustomer = new Map(counts.map((c) => [c._id.toString(), c.count]));
+
+    return customers.map((c) => ({
+      _id: c._id.toString(),
+      name: c.name,
+      email: c.email,
+      role: c.role,
+      bookingCount: countByCustomer.get(c._id.toString()) ?? 0,
+      createdAt: c.createdAt,
+    }));
   }
 }
