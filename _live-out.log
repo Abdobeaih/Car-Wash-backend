@@ -93,3 +93,6 @@
 [32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٥ م [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +1125ms[39m
 [32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٥ م [32m    LOG[39m [38;5;3m[Bootstrap] [39m[32mAPI running at http://localhost:3001[39m
 [32m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٤:٠٣:٢٥ م [32m    LOG[39m [38;5;3m[Bootstrap] [39m[32mHealth check at http://localhost:3001/health[39m
+[33m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٥:١٤:٤٥ م [33m   WARN[39m [38;5;3m[MailService] [39m[33m[dev] Email delivery unavailable (email send failed). OTP for test@example.com: 164434[39m
+[33m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٦:٣٣:٠٢ م [33m   WARN[39m [38;5;3m[MailService] [39m[33m[dev] Email delivery unavailable (email send failed). OTP for fw-confirm-1850481308@example.com: 518143[39m
+[33m[Nest] 14324  - [39m١٠‏/٠٩‏/٢٠٢٦، ٦:٤٣:٤٠ م [33m   WARN[39m [38;5;3m[MailService] [39m[33m[dev] Email delivery unavailable (email send failed). OTP for e2e-208316270@example.com: 531880[39m
