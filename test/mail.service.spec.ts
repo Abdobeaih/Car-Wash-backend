@@ -106,6 +106,7 @@ describe('MailService', () => {
   });
 
   it('logs the OTP instead of failing when SMTP_LOG_OTP is enabled in dev', async () => {
+    const countsBeforeNoCredsInstance = (nodemailer.createTransport as jest.Mock).mock.calls.length;
     mailService = new MailService(makeConfig({ SMTP_PASS: '', SMTP_LOG_OTP: 'true' }));
     const previousNodeEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'development';
@@ -121,6 +122,8 @@ describe('MailService', () => {
       process.env.NODE_ENV = previousNodeEnv;
     }
 
-    expect(nodemailer.createTransport).not.toHaveBeenCalled();
+    expect((nodemailer.createTransport as jest.Mock).mock.calls.length).toBe(
+      countsBeforeNoCredsInstance,
+    );
   });
 });

@@ -14,6 +14,7 @@ export class RegisterDto {
   @MinLength(8, { message: 'Password must be at least 8 characters' })
   password: string;
 
+  @IsOptional()
   @IsString()
   confirmPassword?: string;
 
