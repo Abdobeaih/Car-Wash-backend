@@ -1,4 +1,4 @@
-import { IsEmail, IsEnum, IsOptional, IsString, Matches, MinLength } from 'class-validator';
+import { Allow, IsEmail, IsEnum, IsOptional, IsString, Matches, MinLength } from 'class-validator';
 import { UserRole } from '../../common/constants/roles';
 import { OtpChannel } from '../../otp/schemas/otp.schema';
 
@@ -14,9 +14,9 @@ export class RegisterDto {
   @MinLength(8, { message: 'Password must be at least 8 characters' })
   password: string;
 
-  @IsOptional()
-  @IsString()
-  confirmPassword: string;
+  @Allow()
+@IsString()
+confirmPassword: string;
 
   @IsOptional()
   @IsString()
