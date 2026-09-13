@@ -14,6 +14,7 @@ export declare class AuthService {
     private readonly otpService;
     constructor(usersService: UsersService, jwtService: JwtService, otpService: OtpService);
     register(dto: RegisterDto): Promise<{
+        devOtp?: string | undefined;
         user: import("../users/users.service").SafeUser;
         message: string;
     }>;
@@ -47,6 +48,7 @@ export declare class AuthService {
         message: string;
     }>;
     resendVerificationOtp(email: string): Promise<{
+        devOtp?: string | undefined;
         message: string;
     }>;
 }

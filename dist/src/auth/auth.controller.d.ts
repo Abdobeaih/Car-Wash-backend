@@ -12,6 +12,7 @@ export declare class AuthController {
     private readonly authService;
     constructor(authService: AuthService);
     register(dto: RegisterDto): Promise<{
+        devOtp?: string | undefined;
         user: import("../users/users.service").SafeUser;
         message: string;
     }>;
@@ -19,6 +20,7 @@ export declare class AuthController {
         message: string;
     }>;
     resendVerification(dto: ResendVerificationDto): Promise<{
+        devOtp?: string | undefined;
         message: string;
     }>;
     login(dto: LoginDto): Promise<{

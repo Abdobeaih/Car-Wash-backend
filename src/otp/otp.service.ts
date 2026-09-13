@@ -23,12 +23,18 @@ export class OtpService {
     private readonly smsService: SmsService,
   ) {}
 
+  /**
+   * Issues a new OTP for `email`/`purpose` and attempts delivery (email or SMS).
+   * Returns the plaintext OTP only when delivery failed AND the dev fallback
+   * (SMTP_LOG_OTP=true, non-production) is active, so the caller can surface it
+   * locally. Returns `undefined` when the code was delivered or no fallback ran.
+   */
   async requestOtp(
     email: string,
     purpose: OtpPurpose,
     channel: OtpChannel = OtpChannel.EMAIL,
     target?: string,
-  ): Promise<void> {
+  ): Promise<string | undefined> {
     const normalized = email.toLowerCase();
     const now = Date.now();
 
@@ -104,15 +110,16 @@ export class OtpService {
         otp,
         expiresInMinutes: OTP_EXPIRY_MS / 60000,
       });
-      return;
+      return undefined;
     }
 
-    await this.mailService.sendOtpEmail({
+    const delivered = await this.mailService.sendOtpEmail({
       to: normalized,
       purpose: purpose === OtpPurpose.PASSWORD_RESET ? 'reset' : 'verify',
       otp,
       expiresInMinutes: OTP_EXPIRY_MS / 60000,
     });
+    return delivered ? undefined : otp;
   }
 
   async verifyOtp(email: string, purpose: OtpPurpose, otp: string): Promise<void> {

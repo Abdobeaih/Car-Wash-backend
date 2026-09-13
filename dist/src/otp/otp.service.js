@@ -116,14 +116,15 @@ let OtpService = class OtpService {
                 otp,
                 expiresInMinutes: otp_config_1.OTP_EXPIRY_MS / 60000,
             });
-            return;
+            return undefined;
         }
-        await this.mailService.sendOtpEmail({
+        const delivered = await this.mailService.sendOtpEmail({
             to: normalized,
             purpose: purpose === otp_schema_1.OtpPurpose.PASSWORD_RESET ? 'reset' : 'verify',
             otp,
             expiresInMinutes: otp_config_1.OTP_EXPIRY_MS / 60000,
         });
+        return delivered ? undefined : otp;
     }
     async verifyOtp(email, purpose, otp) {
         const normalized = email.toLowerCase();

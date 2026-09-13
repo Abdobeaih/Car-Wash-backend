@@ -60,7 +60,7 @@ let MailService = MailService_1 = class MailService {
             await this.transporter.close();
         }
     }
-    async sendOtpEmail({ to, purpose, otp, expiresInMinutes }) {
+    async sendOtpEmail({ to, purpose, otp, expiresInMinutes, }) {
         const subject = purpose === 'reset' ? 'Reset your password' : 'Verify your email';
         const text = this.buildText(purpose, otp, expiresInMinutes);
         if (!this.transporter) {
@@ -74,11 +74,12 @@ let MailService = MailService_1 = class MailService {
             this.logger.error('Unexpected email send failure', err);
             return this.handleDeliveryFailure('email send failed', to, otp);
         }
+        return true;
     }
     handleDeliveryFailure(reason, to, otp) {
         if (this.devLogOtp && process.env.NODE_ENV !== 'production') {
             this.logger.warn(`[dev] Email delivery unavailable (${reason}). OTP for ${to}: ${otp}`);
-            return;
+            return false;
         }
         throw new otp_errors_1.OtpException(otp_errors_1.OtpErrorCode.EMAIL_SEND_FAILED, 'Unable to send the verification email. Please try again later.');
     }

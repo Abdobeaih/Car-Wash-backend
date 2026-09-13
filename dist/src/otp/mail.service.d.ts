@@ -15,7 +15,7 @@ export declare class MailService implements OnModuleInit, OnModuleDestroy {
     constructor(configService: ConfigService);
     onModuleInit(): Promise<void>;
     onModuleDestroy(): Promise<void>;
-    sendOtpEmail({ to, purpose, otp, expiresInMinutes }: OtpEmailPayload): Promise<void>;
+    sendOtpEmail({ to, purpose, otp, expiresInMinutes, }: OtpEmailPayload): Promise<boolean>;
     private handleDeliveryFailure;
     private buildText;
 }

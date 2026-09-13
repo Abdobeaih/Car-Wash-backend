@@ -78,7 +78,12 @@ export class MailService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async sendOtpEmail({ to, purpose, otp, expiresInMinutes }: OtpEmailPayload): Promise<void> {
+  async sendOtpEmail({
+    to,
+    purpose,
+    otp,
+    expiresInMinutes,
+  }: OtpEmailPayload): Promise<boolean> {
     const subject = purpose === 'reset' ? 'Reset your password' : 'Verify your email';
     const text = this.buildText(purpose, otp, expiresInMinutes);
 
@@ -95,12 +100,18 @@ export class MailService implements OnModuleInit, OnModuleDestroy {
       this.logger.error('Unexpected email send failure', err as Error);
       return this.handleDeliveryFailure('email send failed', to, otp);
     }
+    return true;
   }
 
-  private handleDeliveryFailure(reason: string, to: string, otp: string): void {
+  /**
+   * Reports whether the email was actually delivered. Returns `false` when the
+   * dev fallback (SMTP_LOG_OTP + non-production) swallowed a failed delivery so
+   * the code can be surfaced to the client; throws in every other failure case.
+   */
+  private handleDeliveryFailure(reason: string, to: string, otp: string): boolean {
     if (this.devLogOtp && process.env.NODE_ENV !== 'production') {
       this.logger.warn(`[dev] Email delivery unavailable (${reason}). OTP for ${to}: ${otp}`);
-      return;
+      return false;
     }
     throw new OtpException(
       OtpErrorCode.EMAIL_SEND_FAILED,

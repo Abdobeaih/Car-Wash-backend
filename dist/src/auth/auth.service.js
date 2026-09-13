@@ -82,8 +82,9 @@ let AuthService = class AuthService {
             verificationChannel: channel,
             role: roles_1.UserRole.CUSTOMER,
         });
+        let devOtp;
         try {
-            await this.otpService.requestOtp(dto.email, otp_schema_1.OtpPurpose.EMAIL_VERIFICATION, channel);
+            devOtp = await this.otpService.requestOtp(dto.email, otp_schema_1.OtpPurpose.EMAIL_VERIFICATION, channel);
         }
         catch (err) {
             await this.usersService.deleteUser(user._id);
@@ -92,6 +93,7 @@ let AuthService = class AuthService {
         return {
             user,
             message: 'Account created. A verification code was sent to your email. Please verify your email to log in.',
+            ...(devOtp !== undefined ? { devOtp } : {}),
         };
     }
     resolvePhone(dto) {
@@ -221,8 +223,11 @@ let AuthService = class AuthService {
         if (user.emailVerified) {
             throw new common_1.BadRequestException('This email is already verified.');
         }
-        await this.otpService.requestOtp(email, otp_schema_1.OtpPurpose.EMAIL_VERIFICATION, otp_schema_1.OtpChannel.EMAIL);
-        return { message: 'A new verification code has been sent to your email.' };
+        const devOtp = await this.otpService.requestOtp(email, otp_schema_1.OtpPurpose.EMAIL_VERIFICATION, otp_schema_1.OtpChannel.EMAIL);
+        return {
+            message: 'A new verification code has been sent to your email.',
+            ...(devOtp !== undefined ? { devOtp } : {}),
+        };
     }
 };
 exports.AuthService = AuthService;
