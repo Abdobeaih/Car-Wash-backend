@@ -154,6 +154,19 @@ export class SeedService implements OnApplicationBootstrap {
       this.logger.log(`Seeded admin user: ${adminEmail}`);
     }
 
+    // One-off, env-gated cleanup: when the admin address moves (e.g. to a
+    // Gmail plus-alias), delete the previous admin record so that address can
+    // register as a normal customer. Only deletes a user that is still ADMIN;
+    // inert unless STALE_ADMIN_EMAIL is set and differs from SEED_ADMIN_EMAIL.
+    const staleAdminEmail = this.configService.get<string>('STALE_ADMIN_EMAIL');
+    if (staleAdminEmail && staleAdminEmail !== adminEmail) {
+      const stale = await this.userModel.findOne({ email: staleAdminEmail }).exec();
+      if (stale && stale.role === UserRole.ADMIN) {
+        await stale.deleteOne();
+        this.logger.log(`Deleted stale admin account: ${staleAdminEmail}`);
+      }
+    }
+
     const customerEmail =
       this.configService.get<string>('SEED_CUSTOMER_EMAIL') ?? 'customer@example.com';
     const customerExists = await this.userModel.exists({ email: customerEmail });
