@@ -1,6 +1,11 @@
 import { Type } from 'class-transformer';
 import {
   ArrayUnique,
+  ArrayNotEmpty,
+  ArrayMaxSize,
+  IsNumber,
+  Min,
+  Max,
   IsArray,
   IsMongoId,
   IsNotEmptyObject,
@@ -28,9 +33,15 @@ class LocationDto {
   address: string;
 
   @IsOptional()
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
   latitude?: number;
 
   @IsOptional()
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
   longitude?: number;
 
   @IsOptional()
@@ -53,6 +64,8 @@ export class CreateBookingDto {
   vehicleId: string;
 
   @IsArray()
+  @ArrayNotEmpty()
+  @ArrayMaxSize(20)
   @ValidateNested({ each: true })
   @Type(() => ServiceSelectionDto)
   services: ServiceSelectionDto[];
