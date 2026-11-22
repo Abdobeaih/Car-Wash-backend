@@ -145,8 +145,11 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-    const user = await this.usersService.findByEmail(dto.email);
-    if (!user) {
+    const isAdminAlias = dto.email.trim().toLowerCase() === 'admin';
+    const email = isAdminAlias ? process.env.SEED_ADMIN_EMAIL : dto.email;
+    // Resolve only on the server. Never create a user or change its recovery email.
+    const user = email ? await this.usersService.findByEmail(email) : null;
+    if (!user || (isAdminAlias && user.role !== UserRole.ADMIN)) {
       throw new UnauthorizedException('Invalid email or password.');
     }
 
