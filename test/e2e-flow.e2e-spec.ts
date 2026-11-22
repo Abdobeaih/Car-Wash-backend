@@ -446,15 +446,15 @@ describe('Mobile Car Care API (e2e, in-memory MongoDB)', () => {
   });
 
   describe('OTP BACKENDS (stubs only, no external calls)', () => {
-    it('requests an SMS OTP through the captured stub', async () => {
+    it('rejects an SMS OTP target instead of redirecting an email-bound code', async () => {
       const res = await request(server).post('/auth/send-otp').send({
         email: 'sms-user@example.com',
         purpose: 'EMAIL_VERIFICATION',
         channel: 'SMS',
         phone: '+201099999999',
       });
-      expect(res.status).toBe(200);
-      expect(sentOtpBySms.has('+201099999999')).toBe(true);
+      expect(res.status).toBe(400);
+      expect(sentOtpBySms.has('+201099999999')).toBe(false);
     });
   });
 });
