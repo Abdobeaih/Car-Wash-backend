@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcryptjs';
@@ -31,6 +31,7 @@ export class UsersService {
     verificationChannel?: OtpChannel;
     role?: UserRole;
   }): Promise<SafeUser> {
+    this.assertPasswordSize(data.password);
     const hashed = await bcrypt.hash(data.password, 12);
     const created = new this.userModel({
       name: data.name,
@@ -75,8 +76,57 @@ export class UsersService {
   }
 
   async updatePassword(id: string, password: string): Promise<void> {
+    this.assertPasswordSize(password);
     const hashed = await bcrypt.hash(password, 12);
-    await this.userModel.updateOne({ _id: id }, { $set: { password: hashed } }).exec();
+    await this.userModel
+      .updateOne(
+        { _id: id },
+        {
+          $set: { password: hashed },
+          $inc: { tokenVersion: 1 },
+        },
+      )
+      .exec();
+  }
+
+  async revokeSessions(id: string): Promise<void> {
+    await this.userModel.updateOne({ _id: id }, { $inc: { tokenVersion: 1 } }).exec();
+  }
+
+  async consumeLoginAttempt(id: string): Promise<boolean> {
+    // A fixed one-minute account window is shared by every serverless instance.
+    // The increment and window rollover are one atomic database operation.
+    const cutoff = new Date(Date.now() - 60_000);
+    const user = await this.userModel
+      .findOneAndUpdate(
+        { _id: id },
+        [
+          {
+            $set: {
+              loginAttempts: {
+                $cond: [
+                  { $gt: ['$loginWindowStart', cutoff] },
+                  { $add: [{ $ifNull: ['$loginAttempts', 0] }, 1] },
+                  1,
+                ],
+              },
+              loginWindowStart: {
+                $cond: [{ $gt: ['$loginWindowStart', cutoff] }, '$loginWindowStart', '$$NOW'],
+              },
+            },
+          },
+        ],
+        { new: true, updatePipeline: true },
+      )
+      .select('+loginAttempts')
+      .exec();
+    return !!user && user.loginAttempts <= 10;
+  }
+
+  private assertPasswordSize(password: string): void {
+    if (Buffer.byteLength(password, 'utf8') > 72) {
+      throw new BadRequestException('Password must not exceed 72 UTF-8 bytes.');
+    }
   }
 
   async markEmailVerified(id: string): Promise<void> {
@@ -106,4 +156,4 @@ export class UsersService {
       updatedAt: user.updatedAt,
     };
   }
-}
+      }
