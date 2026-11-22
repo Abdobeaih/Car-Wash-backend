@@ -156,4 +156,4 @@ export class UsersService {
       updatedAt: user.updatedAt,
     };
   }
-      }
+}
