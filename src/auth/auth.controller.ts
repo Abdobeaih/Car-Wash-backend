@@ -52,7 +52,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)
   logout(@CurrentUser() user: RequestUser) {
-    return { message: 'Logged out successfully', userId: user.id };
+    return this.authService.logout(user.id);
   }
 
   @Get('me')

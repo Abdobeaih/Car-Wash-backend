@@ -1,9 +1,16 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { randomInt } from 'crypto';
+import { randomInt, createHash } from 'crypto';
 import * as bcrypt from 'bcryptjs';
-import { Otp, OtpChannel, OtpDocument, OtpPurpose } from './schemas/otp.schema';
+import {
+  Otp,
+  OtpChannel,
+  OtpDocument,
+  OtpPurpose,
+  OtpQuota,
+  OtpQuotaDocument,
+} from './schemas/otp.schema';
 import { MailService } from './mail.service';
 import { SmsService } from './sms.service';
 import { OtpErrorCode, OtpException } from './otp-errors';
@@ -21,10 +28,11 @@ export class OtpService {
     @InjectModel(Otp.name) private readonly otpModel: Model<OtpDocument>,
     private readonly mailService: MailService,
     private readonly smsService: SmsService,
+    @InjectModel(OtpQuota.name) private readonly quotaModel: Model<OtpQuotaDocument>,
   ) {}
 
   /**
-   * Issues a new OTP for `email`/`purpose` and attempts delivery (email or SMS).
+   * Issues a new OTP for `email`/`purpose` and attempts email delivery.
    * Returns the plaintext OTP only when delivery failed AND the dev fallback
    * (SMTP_LOG_OTP=true, non-production) is active, so the caller can surface it
    * locally. Returns `undefined` when the code was delivered or no fallback ran.
@@ -38,10 +46,12 @@ export class OtpService {
     const normalized = email.toLowerCase();
     const now = Date.now();
 
-    if (channel === OtpChannel.SMS && !target) {
-      throw new BadRequestException('A valid phone number is required to receive the code by SMS.');
+    // Account recovery is email-only. Never send an email-bound reset code to a
+    // caller-selected phone, even when an SMS provider has been configured.
+    if (channel !== OtpChannel.EMAIL || target) {
+      throw new BadRequestException('Account verification and recovery use email only.');
     }
-    const deliveryTarget = channel === OtpChannel.SMS ? (target as string) : normalized;
+    const deliveryTarget = normalized;
 
     const latest = await this.findLatest(normalized, purpose);
 
@@ -66,6 +76,8 @@ export class OtpService {
         'Too many code requests. Please try again in 10 minutes.',
       );
     }
+
+    await this.reserveIssueBudget(normalized, now);
 
     const otp = randomInt(100000, 1000000).toString();
     const otpHash = await bcrypt.hash(otp, 10);
@@ -104,15 +116,6 @@ export class OtpService {
       lastRequestAt: new Date(now),
     });
 
-    if (channel === OtpChannel.SMS) {
-      await this.smsService.sendOtpSms({
-        to: deliveryTarget,
-        otp,
-        expiresInMinutes: OTP_EXPIRY_MS / 60000,
-      });
-      return undefined;
-    }
-
     const delivered = await this.mailService.sendOtpEmail({
       to: normalized,
       purpose: purpose === OtpPurpose.PASSWORD_RESET ? 'reset' : 'verify',
@@ -125,7 +128,7 @@ export class OtpService {
   async verifyOtp(email: string, purpose: OtpPurpose, otp: string): Promise<void> {
     const normalized = email.toLowerCase();
     const record = await this.findLatest(normalized, purpose);
-    if (!record) {
+    if (!record || record.channel !== OtpChannel.EMAIL || record.target !== normalized) {
       throw new OtpException(OtpErrorCode.NOT_FOUND, 'No verification code found for this email.');
     }
 
@@ -147,25 +150,107 @@ export class OtpService {
       );
     }
 
-    const valid = await bcrypt.compare(otp, record.otpHash);
+    // Reserve an attempt atomically before the expensive comparison. Parallel
+    // requests cannot each reuse the same old attempts value.
+    const reserved = await this.otpModel
+      .findOneAndUpdate(
+        {
+          _id: record._id,
+          channel: OtpChannel.EMAIL,
+          target: normalized,
+          used: false,
+          expiresAt: { $gt: new Date() },
+          attempts: { $lt: OTP_MAX_ATTEMPTS },
+        },
+        { $inc: { attempts: 1 } },
+        { new: true },
+      )
+      .exec();
+    if (!reserved) {
+      throw new OtpException(OtpErrorCode.MAX_ATTEMPTS, 'Code unavailable. Request a new code.');
+    }
+    const valid = await bcrypt.compare(otp, reserved.otpHash);
     if (!valid) {
-      record.attempts += 1;
-      if (record.attempts >= OTP_MAX_ATTEMPTS) {
-        record.used = true;
-        record.usedAt = new Date();
-        await record.save();
+      if (reserved.attempts >= OTP_MAX_ATTEMPTS) {
         throw new OtpException(
           OtpErrorCode.MAX_ATTEMPTS,
           'Too many incorrect attempts. Request a new code.',
         );
       }
-      await record.save();
       throw new OtpException(OtpErrorCode.INVALID, 'The code you entered is incorrect.');
     }
+    // Compare-and-set consumption makes an OTP single-use across concurrent
+    // requests and across separate serverless instances.
+    const consumed = await this.otpModel
+      .updateOne(
+        { _id: record._id, used: false, expiresAt: { $gt: new Date() } },
+        { $set: { used: true, usedAt: new Date() } },
+      )
+      .exec();
+    if (consumed.modifiedCount !== 1) {
+      throw new OtpException(
+        OtpErrorCode.ALREADY_USED,
+        'This code has already been used. Request a new one.',
+      );
+    }
+  }
 
-    record.used = true;
-    record.usedAt = new Date();
-    await record.save();
+  private async reserveIssueBudget(email: string, now: number): Promise<void> {
+    const cutoff = new Date(now - OTP_RATE_WINDOW_MS);
+    const id = createHash('sha256').update(email).digest('hex');
+    try {
+      await this.quotaModel
+        .findOneAndUpdate(
+          {
+            _id: id,
+            $and: [
+              {
+                $or: [
+                  { lastRequestAt: { $lte: new Date(now - OTP_RESEND_COOLDOWN_MS) } },
+                  { lastRequestAt: { $exists: false } },
+                ],
+              },
+              {
+                $or: [
+                  { windowStart: { $lte: cutoff } },
+                  { requestCount: { $lt: OTP_MAX_REQUESTS } },
+                  { requestCount: { $exists: false } },
+                ],
+              },
+            ],
+          },
+          [
+            {
+              $set: {
+                requestCount: {
+                  $cond: [
+                    { $gt: ['$windowStart', cutoff] },
+                    { $add: [{ $ifNull: ['$requestCount', 0] }, 1] },
+                    1,
+                  ],
+                },
+                windowStart: {
+                  $cond: [{ $gt: ['$windowStart', cutoff] }, '$windowStart', new Date(now)],
+                },
+                lastRequestAt: new Date(now),
+                expiresAt: new Date(now + OTP_RATE_WINDOW_MS),
+              },
+            },
+          ],
+          { upsert: true, returnDocument: 'after', updatePipeline: true },
+        )
+        .exec();
+    } catch (error) {
+      // A rejected conditional upsert collides with the unique _id. That is a
+      // competing request or exhausted budget, never permission to send.
+      if ((error as { code?: number }).code === 11000) {
+        throw new OtpException(
+          OtpErrorCode.RATE_LIMITED,
+          'Too many code requests. Please wait before trying again.',
+        );
+      }
+      throw error;
+    }
   }
 
   private findLatest(email: string, purpose: OtpPurpose): Promise<OtpDocument | null> {

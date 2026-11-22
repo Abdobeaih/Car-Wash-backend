@@ -78,12 +78,7 @@ export class MailService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async sendOtpEmail({
-    to,
-    purpose,
-    otp,
-    expiresInMinutes,
-  }: OtpEmailPayload): Promise<boolean> {
+  async sendOtpEmail({ to, purpose, otp, expiresInMinutes }: OtpEmailPayload): Promise<boolean> {
     const subject = purpose === 'reset' ? 'Reset your password' : 'Verify your email';
     const text = this.buildText(purpose, otp, expiresInMinutes);
 

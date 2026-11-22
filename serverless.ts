@@ -34,7 +34,6 @@ export default async function handler(req: any, res: any): Promise<void> {
       JSON.stringify({
         statusCode: 503,
         message: 'API is starting or temporarily unavailable. Please retry.',
-        detail: lastInitError ? lastInitError.message : undefined,
         timestamp: new Date().toISOString(),
       }),
     );

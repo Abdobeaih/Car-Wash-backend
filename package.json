@@ -2,7 +2,7 @@
   "name": "api",
   "version": "1.0.0",
   "private": true,
-  "description": "Mobile Car Care — NestJS REST API",
+  "description": "Mobile Car Care \u2014 NestJS REST API",
   "scripts": {
     "build": "nest build",
     "dev": "nest start --watch",
@@ -14,7 +14,8 @@
     "typecheck": "tsc --noEmit",
     "test": "jest --config ./test/jest.json",
     "test:watch": "jest --config ./test/jest.json --watch",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./test/jest-e2e.json",
+    "test:coverage": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./test/jest-coverage.cjs --coverage --runInBand"
   },
   "dependencies": {
     "@nestjs/common": "^11.2.1",

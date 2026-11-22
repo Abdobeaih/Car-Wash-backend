@@ -32,6 +32,9 @@ describe('AuthService', () => {
     updatePassword: jest.fn(),
     markEmailVerified: jest.fn(),
     deleteUser: jest.fn(),
+    consumeLoginAttempt: jest.fn(),
+    revokeSessions: jest.fn(),
+    updateProfile: jest.fn(),
   };
 
   const jwtService = {
@@ -45,6 +48,7 @@ describe('AuthService', () => {
 
   beforeEach(async () => {
     jest.resetAllMocks();
+    usersService.consumeLoginAttempt.mockResolvedValue(true);
     jwtService.sign.mockReturnValue('signed-token');
     otpService.requestOtp.mockResolvedValue(undefined);
     otpService.verifyOtp.mockResolvedValue(undefined);
@@ -340,5 +344,56 @@ describe('AuthService', () => {
       '123456',
     );
     expect(usersService.updatePassword).toHaveBeenCalledWith('user-1', 'newpassword123');
+  });
+  it('rejects an exhausted persisted login budget before checking the password', async () => {
+    usersService.findByEmail.mockResolvedValue(userRecord);
+    usersService.consumeLoginAttempt.mockResolvedValue(false);
+    await expect(
+      authService.login({ email: userRecord.email, password: 'fixture-password' }),
+    ).rejects.toMatchObject({ status: 429 });
+    expect(usersService.verifyPassword).not.toHaveBeenCalled();
+  });
+  it('never resolves the admin alias to a customer account', async () => {
+    usersService.findByEmail.mockResolvedValue(userRecord);
+    const old = process.env.SEED_ADMIN_EMAIL;
+    process.env.SEED_ADMIN_EMAIL = userRecord.email;
+    try {
+      await expect(
+        authService.login({ email: 'admin', password: 'fixture-password' }),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
+      expect(usersService.verifyPassword).not.toHaveBeenCalled();
+    } finally {
+      if (old === undefined) delete process.env.SEED_ADMIN_EMAIL;
+      else process.env.SEED_ADMIN_EMAIL = old;
+    }
+  });
+  it('revokes sessions on logout', async () => {
+    await authService.logout('user-1');
+    expect(usersService.revokeSessions).toHaveBeenCalledWith('user-1');
+  });
+  it('rejects profile changes for a deleted account', async () => {
+    usersService.findById.mockResolvedValue(null);
+    await expect(authService.updateProfile('missing', { name: 'Fixture' })).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+  });
+  it('blocks recovery-email changes using a session alone', async () => {
+    usersService.findById.mockResolvedValue(userRecord);
+    await expect(
+      authService.updateProfile('user-1', { email: 'new@example.com' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(usersService.updateProfile).not.toHaveBeenCalled();
+  });
+  it('does not reveal whether a password-reset email exists', async () => {
+    usersService.findByEmail.mockResolvedValue(null);
+    const result = await authService.forgotPassword({ email: 'missing@example.com' });
+    expect(result.message).toContain('If an account exists');
+    expect(otpService.requestOtp).not.toHaveBeenCalled();
+  });
+  it('rejects verification resend for an already verified account', async () => {
+    usersService.findByEmail.mockResolvedValue(userRecord);
+    await expect(authService.resendVerificationOtp(userRecord.email)).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
   });
 });

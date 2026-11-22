@@ -14,6 +14,7 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ThrottlerException } from '@nestjs/throttler';
 import { UserRole } from '../common/constants/roles';
 
 // Minimal dial-code -> ISO 2-letter country map used to derive a normalized
@@ -153,6 +154,9 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password.');
     }
 
+    if (!(await this.usersService.consumeLoginAttempt(user._id.toString()))) {
+      throw new ThrottlerException('Too many login attempts. Please retry in one minute.');
+    }
     const valid = await this.usersService.verifyPassword(user, dto.password);
     if (!valid) {
       throw new UnauthorizedException('Invalid email or password.');
@@ -174,12 +178,23 @@ export class AuthService {
         role: user.role,
         emailVerified: true,
       },
-      token: this.signToken(user._id.toString(), user.email, user.role),
+      token: this.signToken(user._id.toString(), user.email, user.role, user.tokenVersion ?? 0),
     };
   }
 
-  signToken(id: string, email: string, role: UserRole): string {
-    return this.jwtService.sign({ email, role }, { subject: id });
+  signToken(id: string, email: string, role: UserRole, ver = 0): string {
+    return this.jwtService.sign(
+      { email, role, ver },
+      {
+        subject: id,
+        ...(role === UserRole.ADMIN ? { expiresIn: '30m' } : {}),
+      },
+    );
+  }
+
+  async logout(userId: string) {
+    await this.usersService.revokeSessions(userId);
+    return { message: 'Logged out on all devices successfully', userId };
   }
 
   async getCurrentUser(userId: string) {
@@ -193,10 +208,11 @@ export class AuthService {
     }
     const newEmail = dto.email?.toLowerCase();
     if (newEmail && newEmail !== current.email) {
-      const existing = await this.usersService.findByEmail(newEmail);
-      if (existing && existing._id.toString() !== userId) {
-        throw new BadRequestException('An account with this email already exists.');
-      }
+      // A session alone must not be enough to redirect password recovery.
+      // Keep the current address until a dedicated verified-change flow exists.
+      throw new BadRequestException(
+        'Email changes require verification and are not available in profile settings.',
+      );
     }
     const updated = await this.usersService.updateProfile(userId, {
       name: dto.name,

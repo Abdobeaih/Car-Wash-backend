@@ -40,6 +40,15 @@ export class User {
   @Prop({ required: true, enum: UserRole, default: UserRole.CUSTOMER, type: String })
   role: UserRole;
 
+  @Prop({ required: true, default: 0, select: false })
+  loginAttempts: number;
+
+  @Prop({ type: Date, select: false })
+  loginWindowStart?: Date;
+
+  @Prop({ required: true, default: 0 })
+  tokenVersion: number;
+
   createdAt?: Date;
   updatedAt?: Date;
 }

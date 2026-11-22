@@ -57,3 +57,25 @@ export class Otp {
 
 export const OtpSchema = SchemaFactory.createForClass(Otp);
 OtpSchema.index({ email: 1, purpose: 1, createdAt: -1 });
+
+// One atomic issue budget per email, shared across purposes and instances.
+export type OtpQuotaDocument = HydratedDocument<OtpQuota>;
+@Schema({ collection: 'otp_quotas', versionKey: false })
+export class OtpQuota {
+  @Prop({ type: String, required: true })
+  _id: string;
+
+  @Prop({ required: true })
+  requestCount: number;
+
+  @Prop({ required: true, type: Date })
+  windowStart: Date;
+
+  @Prop({ required: true, type: Date })
+  lastRequestAt: Date;
+
+  @Prop({ required: true, type: Date })
+  expiresAt: Date;
+}
+export const OtpQuotaSchema = SchemaFactory.createForClass(OtpQuota);
+OtpQuotaSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });

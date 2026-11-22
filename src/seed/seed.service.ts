@@ -128,21 +128,10 @@ export class SeedService implements OnApplicationBootstrap {
       .select('+password')
       .exec();
     if (existingAdmin) {
-      const passwordMatches = await bcrypt.compare(adminPassword, existingAdmin.password);
-      if (
-        existingAdmin.role !== UserRole.ADMIN ||
-        !passwordMatches ||
-        !existingAdmin.emailVerified
-      ) {
-        existingAdmin.name = adminName;
-        existingAdmin.role = UserRole.ADMIN;
-        existingAdmin.emailVerified = true;
-        if (!passwordMatches) {
-          existingAdmin.password = await bcrypt.hash(adminPassword, 12);
-        }
-        await existingAdmin.save();
-        this.logger.log(`Updated admin credentials to match SEED_ADMIN_* (${adminEmail}).`);
-      }
+      // Existing accounts are authoritative. Bootstrap must never restore an
+      // old password, promote an account or silently verify a changed address.
+      // The seed password is only used when creating the first admin.
+      this.logger.log('Existing admin seed account preserved.');
     } else {
       await this.userModel.create({
         name: adminName,
@@ -152,19 +141,6 @@ export class SeedService implements OnApplicationBootstrap {
         emailVerified: true,
       });
       this.logger.log(`Seeded admin user: ${adminEmail}`);
-    }
-
-    // One-off, env-gated cleanup: when the admin address moves (e.g. to a
-    // Gmail plus-alias), delete the previous admin record so that address can
-    // register as a normal customer. Only deletes a user that is still ADMIN;
-    // inert unless STALE_ADMIN_EMAIL is set and differs from SEED_ADMIN_EMAIL.
-    const staleAdminEmail = this.configService.get<string>('STALE_ADMIN_EMAIL');
-    if (staleAdminEmail && staleAdminEmail !== adminEmail) {
-      const stale = await this.userModel.findOne({ email: staleAdminEmail }).exec();
-      if (stale && stale.role === UserRole.ADMIN) {
-        await stale.deleteOne();
-        this.logger.log(`Deleted stale admin account: ${staleAdminEmail}`);
-      }
     }
 
     const customerEmail =
