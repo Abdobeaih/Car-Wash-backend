@@ -13,6 +13,7 @@ export interface JwtPayload {
   sub: string;
   email: string;
   role: UserRole;
+  ver?: number;
 }
 
 @Injectable()
@@ -32,6 +33,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const user = await this.userModel.findById(payload.sub).lean().exec();
     if (!user) {
       throw new UnauthorizedException('Account no longer exists.');
+    }
+    if ((payload.ver ?? 0) !== (user.tokenVersion ?? 0)) {
+      throw new UnauthorizedException('Session expired. Please log in again.');
     }
     if (!user.emailVerified) {
       throw new UnauthorizedException(
