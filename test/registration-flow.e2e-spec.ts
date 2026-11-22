@@ -36,6 +36,8 @@ describe('Registration & Phone Flow (E2E Integration)', () => {
   let nextId = 1;
 
   const mockUsersService = {
+    consumeLoginAttempt: jest.fn().mockResolvedValue(true),
+    revokeSessions: jest.fn().mockResolvedValue(undefined),
     create: jest.fn(
       async (data: {
         name: string;
