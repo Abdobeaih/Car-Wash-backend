@@ -16,6 +16,7 @@ import { OtpService } from '../src/otp/otp.service';
 import { OtpPurpose } from '../src/otp/schemas/otp.schema';
 import { SeedService } from '../src/seed/seed.service';
 import { JwtService } from '@nestjs/jwt';
+import { BookingDocument, BookingStatus } from '../src/bookings/schemas/booking.schema';
 
 jest.setTimeout(180000);
 const PASSWORD = 'Fixture-password-123!';
@@ -368,6 +369,150 @@ describe('Security boundaries (real HTTP, JWT and temporary MongoDB)', () => {
       .patch('/notifications/' + notice._id.toString() + '/read')
       .auth(a.token, { type: 'bearer' })
       .expect(200);
+  });
+  it('serializes overlapping creates across independent requests', async () => {
+    const a = await account();
+    const car = await http()
+      .post('/vehicles')
+      .auth(a.token, { type: 'bearer' })
+      .send({
+        brand: 'Toyota',
+        model: 'Race fixture',
+        year: 2023,
+        color: 'White',
+        plateNumber: 'RACE-123',
+        vehicleType: 'SEDAN',
+      })
+      .expect(201);
+    const catalogue = await http().get('/services').expect(200);
+    const svc = catalogue.body[0];
+    const date = '2035-06-12';
+    const body = {
+      vehicleId: car.body._id,
+      services: [{ serviceId: svc._id, addOnIds: [] }],
+      date,
+      startTime: '09:00',
+      location: { country: 'Egypt', city: 'Cairo', address: 'Local race fixture street' },
+    };
+    const bookings = app.get<Model<BookingDocument>>(getModelToken('Booking'));
+    await bookings.init();
+    const original = bookings.prototype.save;
+    let arrived = 0;
+    let release!: () => void;
+    const barrier = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const spy = jest.spyOn(bookings.prototype, 'save').mockImplementation(async function (
+      this: BookingDocument,
+    ) {
+      if (this.date === date && this.isNew) {
+        if (++arrived === 2) release();
+        await barrier;
+      }
+      return original.call(this);
+    });
+    try {
+      const results = await Promise.all(
+        [0, 1].map(() => http().post('/bookings').auth(a.token, { type: 'bearer' }).send(body)),
+      );
+      expect(results.map((r) => r.status).sort()).toEqual([201, 409]);
+      expect(
+        await bookings.countDocuments({ date, status: { $ne: BookingStatus.CANCELLED } }),
+      ).toBe(1);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+  it('keeps adjacent slots, releases cancellation, and rejects conflicting admin restoration', async () => {
+    const bookings = app.get<Model<BookingDocument>>(getModelToken('Booking'));
+    const template = await bookings.findOne({ date: '2035-06-12' }).lean();
+    const base = Object.fromEntries(
+      Object.entries(template!).filter(
+        ([key]) => !['_id', 'createdAt', 'updatedAt', '__v'].includes(key),
+      ),
+    );
+    const first = await bookings.create({
+      ...base,
+      date: '2035-06-13',
+      startTime: '09:00',
+      endTime: '10:00',
+      duration: 60,
+    });
+    const adjacent = await bookings.create({
+      ...base,
+      date: '2035-06-13',
+      startTime: '10:00',
+      endTime: '11:00',
+      duration: 60,
+    });
+    expect(adjacent.id).not.toBe(first.id);
+    await expect(
+      bookings.create({
+        ...base,
+        date: '2035-06-13',
+        startTime: '09:30',
+        endTime: '10:30',
+        duration: 60,
+      }),
+    ).rejects.toThrow('no longer available');
+    first.status = BookingStatus.CANCELLED;
+    await first.save();
+    const replacement = await bookings.create({
+      ...base,
+      date: '2035-06-13',
+      startTime: '09:00',
+      endTime: '10:00',
+      duration: 60,
+    });
+    const admin = await account(UserRole.ADMIN);
+    await http()
+      .patch('/admin/bookings/' + first.id + '/status')
+      .auth(admin.token, { type: 'bearer' })
+      .send({ status: 'CONFIRMED' })
+      .expect(409);
+    expect((await bookings.findById(first.id))!.status).toBe('CANCELLED');
+    replacement.status = BookingStatus.CANCELLED;
+    await replacement.save();
+    await http()
+      .patch('/admin/bookings/' + first.id + '/status')
+      .auth(admin.token, { type: 'bearer' })
+      .send({ status: 'CONFIRMED' })
+      .expect(200);
+    expect((await bookings.findById(first.id))!.status).toBe('CONFIRMED');
+  });
+  it('preserves legacy booking records and checks them before accepting a conflicting booking', async () => {
+    const bookings = app.get<Model<BookingDocument>>(getModelToken('Booking'));
+    const template = await bookings.findOne({ date: '2035-06-12' }).lean();
+    const base = Object.fromEntries(
+      Object.entries(template!).filter(
+        ([key]) => !['_id', 'createdAt', 'updatedAt', '__v'].includes(key),
+      ),
+    );
+    const legacy = {
+      ...base,
+      date: '2035-06-14',
+      startTime: '09:00',
+      endTime: '10:00',
+      duration: 60,
+    };
+    const inserted = await bookings.collection.insertOne({ ...legacy });
+    await expect(
+      bookings.create({ ...legacy, startTime: '09:30', endTime: '10:30' }),
+    ).rejects.toThrow('no longer available');
+    expect(await bookings.collection.findOne({ _id: inserted.insertedId })).not.toHaveProperty(
+      'occupiedMinutes',
+    );
+    const indexes = await bookings.collection.indexes();
+    expect(indexes.find((index) => index.name === 'booking_occupied_minutes_unique')?.unique).toBe(
+      true,
+    );
+    const current = await bookings
+      .findOne({ date: '2035-06-12' })
+      .select('+occupiedMinutes')
+      .lean();
+    await expect(
+      bookings.collection.insertOne({ ...legacy, occupiedMinutes: current!.occupiedMinutes }),
+    ).rejects.toMatchObject({ code: 11000 });
   });
   it('sends only one email when concurrent requests race the resend cooldown', async () => {
     const a = await account();
