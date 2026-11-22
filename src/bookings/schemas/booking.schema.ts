@@ -117,6 +117,18 @@ BookingSchema.index(
     partialFilterExpression: { 'occupiedMinutes.0': { $exists: true } },
   },
 );
+BookingSchema.post('init', function (document) {
+  document.$locals.originalStatus = document.status;
+});
+BookingSchema.post('save', function (document) {
+  document.$locals.originalStatus = document.status;
+});
+BookingSchema.set('toJSON', {
+  transform: (_document, result) => {
+    delete result.occupiedMinutes;
+    return result;
+  },
+});
 BookingSchema.pre('save', async function () {
   const model = this.constructor as Model<Booking>;
   // Do not accept a booking before MongoDB has confirmed its enforcing index.
@@ -125,8 +137,16 @@ BookingSchema.pre('save', async function () {
     this.occupiedMinutes = [];
     return;
   }
-  const start = toMinutes(this.startTime);
-  const end = toMinutes(this.endTime);
+  const needsReservation =
+    this.isNew ||
+    this.isModified('date') ||
+    this.isModified('startTime') ||
+    this.isModified('endTime') ||
+    (this.isModified('status') && this.$locals.originalStatus === BookingStatus.CANCELLED);
+  // A status-only update must not rewrite or block an existing legacy booking.
+  if (!needsReservation) return;
+  const start = Math.floor(toMinutes(this.startTime));
+  const end = Math.ceil(toMinutes(this.endTime));
   this.occupiedMinutes = Array.from({ length: end - start }, (_, i) => `${this.date}:${start + i}`);
   // Legacy active bookings have no minute keys. Keep the original overlap check
   // for them, including when an admin restores a cancelled booking.
