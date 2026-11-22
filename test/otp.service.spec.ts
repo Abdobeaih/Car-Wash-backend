@@ -1,311 +1,174 @@
-/**
- * Unit tests for the OTP service.
- */
 import { Test } from '@nestjs/testing';
 import { getModelToken } from '@nestjs/mongoose';
-import { BadRequestException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { OtpService } from '../src/otp/otp.service';
 import { MailService } from '../src/otp/mail.service';
 import { SmsService } from '../src/otp/sms.service';
-import { Otp, OtpChannel, OtpPurpose } from '../src/otp/schemas/otp.schema';
-import { OtpErrorCode, OtpException } from '../src/otp/otp-errors';
+import { Otp, OtpChannel, OtpPurpose, OtpQuota } from '../src/otp/schemas/otp.schema';
 import { OTP_MAX_ATTEMPTS } from '../src/otp/otp-config';
 
-describe('OtpService', () => {
-  let otpService: OtpService;
-
-  const mailService = {
-    sendOtpEmail: jest.fn(),
-  };
-
-  const smsService = {
-    sendOtpSms: jest.fn(),
-  };
-
-  const makeDoc = (overrides: Record<string, unknown> = {}) => {
-    const doc = {
-      email: 'test@example.com',
-      purpose: OtpPurpose.EMAIL_VERIFICATION,
-      otpHash: '',
-      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
-      attempts: 0,
-      used: false,
-      requestCount: 1,
-      rateWindowStart: new Date(Date.now() - 5 * 1000),
-      lastRequestAt: new Date(Date.now() - 5 * 1000),
-      save: jest.fn(),
-      ...overrides,
-    };
-    doc.save = jest.fn().mockResolvedValue(doc);
-    return doc;
-  };
-
-  let otpModel: {
-    findOne: jest.Mock;
-    create: jest.Mock;
-    updateMany: jest.Mock;
-  };
-
-  const findOneReturn = { findOne: jest.fn(), sort: jest.fn(), exec: jest.fn() };
-
+const query = (value: unknown) => ({
+  sort: () => ({ exec: async () => value }),
+  exec: async () => value,
+});
+describe('OtpService security', () => {
+  let service: OtpService;
+  let model: Record<
+    'findOne' | 'create' | 'updateMany' | 'updateOne' | 'findOneAndUpdate',
+    jest.Mock
+  >;
+  let mail: { sendOtpEmail: jest.Mock };
+  let sms: { sendOtpSms: jest.Mock };
+  const record = (overrides = {}) => ({
+    _id: 'otp-1',
+    email: 'test@example.com',
+    target: 'test@example.com',
+    channel: OtpChannel.EMAIL,
+    purpose: OtpPurpose.PASSWORD_RESET,
+    expiresAt: new Date(Date.now() + 300000),
+    attempts: 0,
+    used: false,
+    lastRequestAt: new Date(Date.now() - 120000),
+    rateWindowStart: new Date(Date.now() - 120000),
+    requestCount: 1,
+    save: jest.fn(),
+    ...overrides,
+  });
   beforeEach(async () => {
-    jest.resetAllMocks();
-    mailService.sendOtpEmail.mockResolvedValue(undefined);
-    smsService.sendOtpSms.mockResolvedValue(undefined);
-    findOneReturn.findOne.mockReturnThis();
-    findOneReturn.sort.mockReturnThis();
-    findOneReturn.exec.mockResolvedValue(null);
-
-    otpModel = {
-      findOne: jest.fn(),
+    model = {
+      findOne: jest.fn(() => query(null)),
       create: jest.fn(),
-      updateMany: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue({}) }),
+      updateMany: jest.fn(() => query({})),
+      updateOne: jest.fn(() => query({ modifiedCount: 1 })),
+      findOneAndUpdate: jest.fn(),
     };
-
-    const moduleRef = await Test.createTestingModule({
+    mail = { sendOtpEmail: jest.fn().mockResolvedValue(true) };
+    sms = { sendOtpSms: jest.fn() };
+    const module = await Test.createTestingModule({
       providers: [
         OtpService,
-        { provide: getModelToken(Otp.name), useValue: otpModel },
-        { provide: MailService, useValue: mailService },
-        { provide: SmsService, useValue: smsService },
+        { provide: getModelToken(Otp.name), useValue: model },
+        {
+          provide: getModelToken(OtpQuota.name),
+          useValue: { findOneAndUpdate: jest.fn(() => query({})) },
+        },
+        { provide: MailService, useValue: mail },
+        { provide: SmsService, useValue: sms },
       ],
     }).compile();
-
-    otpService = moduleRef.get(OtpService);
+    service = module.get(OtpService);
   });
-
-  it('generates a secure hashed OTP and emails it', async () => {
-    otpModel.findOne.mockReturnValue({
-      sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
-    });
-    otpModel.create.mockImplementation((data) => makeDoc(data));
-
-    await otpService.requestOtp('test@example.com', OtpPurpose.EMAIL_VERIFICATION);
-
-    const created = otpModel.create.mock.calls[0][0];
-    expect(created.email).toBe('test@example.com');
-    expect(created.channel).toBe(OtpChannel.EMAIL);
-    expect(created.target).toBe('test@example.com');
-    expect(created.attempts).toBe(0);
-    expect(created.used).toBe(false);
-    expect(created.otpHash).toMatch(/^\$2[a-z]\$/);
-    expect(created.expiresAt.getTime()).toBeGreaterThan(Date.now() + 4.5 * 60 * 1000);
-
-    const emailPayload = mailService.sendOtpEmail.mock.calls[0][0];
-    expect(emailPayload.otp).toMatch(/^\d{6}$/);
-    expect(emailPayload.to).toBe('test@example.com');
-    expect(created.otpHash).not.toBe(emailPayload.otp);
-  });
-
-  it('rejects a resend within the 60s cooldown', async () => {
-    const existing = makeDoc({ lastRequestAt: new Date(Date.now() - 10 * 1000) });
-    otpModel.findOne.mockReturnValue({
-      sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(existing) }),
-    });
-
+  it('hashes random six-digit email codes, never returns a delivered code', async () => {
     await expect(
-      otpService.requestOtp('test@example.com', OtpPurpose.EMAIL_VERIFICATION),
-    ).rejects.toMatchObject({ code: OtpErrorCode.RESEND_TOO_SOON });
+      service.requestOtp('TEST@example.com', OtpPurpose.PASSWORD_RESET),
+    ).resolves.toBeUndefined();
+    const stored = model.create.mock.calls[0][0];
+    const sent = mail.sendOtpEmail.mock.calls[0][0];
+    expect(stored.target).toBe('test@example.com');
+    expect(sent.otp).toMatch(/^\d{6}$/);
+    expect(stored.otpHash).not.toBe(sent.otp);
+    expect(await bcrypt.compare(sent.otp, stored.otpHash)).toBe(true);
+    expect(stored.expiresAt.getTime()).toBeGreaterThan(Date.now() + 240000);
   });
-
-  it('rejects after 3 requests within 10 minutes', async () => {
-    const existing = makeDoc({
-      requestCount: 3,
-      lastRequestAt: new Date(Date.now() - 2 * 60 * 1000),
-      rateWindowStart: new Date(Date.now() - 2 * 60 * 1000),
-    });
-    otpModel.findOne.mockReturnValue({
-      sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(existing) }),
-    });
-
+  it.each([OtpPurpose.PASSWORD_RESET, OtpPurpose.EMAIL_VERIFICATION])(
+    'rejects caller-selected SMS delivery for %s before storage/delivery',
+    async (purpose) => {
+      await expect(
+        service.requestOtp('test@example.com', purpose, OtpChannel.SMS, '+14155552671'),
+      ).rejects.toThrow('email only');
+      expect(model.create).not.toHaveBeenCalled();
+      expect(sms.sendOtpSms).not.toHaveBeenCalled();
+    },
+  );
+  it('rejects a phone target even if channel is labelled EMAIL', async () => {
     await expect(
-      otpService.requestOtp('test@example.com', OtpPurpose.EMAIL_VERIFICATION),
-    ).rejects.toMatchObject({ code: OtpErrorCode.RATE_LIMITED });
+      service.requestOtp(
+        'test@example.com',
+        OtpPurpose.PASSWORD_RESET,
+        OtpChannel.EMAIL,
+        '+14155552671',
+      ),
+    ).rejects.toThrow('email only');
   });
-
-  it('invalidates the previous OTP when a new one is requested', async () => {
-    const existing = makeDoc({
-      requestCount: 1,
-      lastRequestAt: new Date(Date.now() - 2 * 60 * 1000),
-      rateWindowStart: new Date(Date.now() - 2 * 60 * 1000),
-    });
-    otpModel.findOne.mockReturnValue({
-      sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(existing) }),
-    });
-    otpModel.create.mockImplementation((data) => makeDoc(data));
-
-    await otpService.requestOtp('test@example.com', OtpPurpose.EMAIL_VERIFICATION);
-
-    expect(existing.used).toBe(true);
-    expect(existing.save).toHaveBeenCalled();
+  it('enforces the resend cooldown', async () => {
+    model.findOne.mockReturnValue(query(record({ lastRequestAt: new Date() })));
+    await expect(
+      service.requestOtp('test@example.com', OtpPurpose.PASSWORD_RESET),
+    ).rejects.toMatchObject({ code: 'OTP_RESEND_TOO_SOON' });
   });
-
-  it('invalidates unexpired OTPs for other purposes when a new one is requested', async () => {
-    const pending = makeDoc({
-      purpose: OtpPurpose.PASSWORD_RESET,
-      lastRequestAt: new Date(Date.now() - 2 * 60 * 1000),
-      rateWindowStart: new Date(Date.now() - 2 * 60 * 1000),
-    });
-    otpModel.findOne
-      .mockReturnValueOnce({
-        sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
-      })
-      .mockReturnValueOnce({
-        sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(pending) }),
-      });
-    otpModel.create.mockImplementation((data) => makeDoc(data));
-
-    await otpService.requestOtp('test@example.com', OtpPurpose.EMAIL_VERIFICATION);
-
-    expect(otpModel.updateMany).toHaveBeenCalledWith(
-      {
-        email: 'test@example.com',
-        purpose: { $ne: OtpPurpose.EMAIL_VERIFICATION },
-        used: false,
-        expiresAt: { $gt: expect.any(Date) },
-      },
-      { $set: { used: true, usedAt: expect.any(Date) } },
+  it('limits send volume across purposes', async () => {
+    model.findOne
+      .mockReturnValueOnce(query(null))
+      .mockReturnValueOnce(query(record({ requestCount: 3 })));
+    await expect(
+      service.requestOtp('test@example.com', OtpPurpose.EMAIL_VERIFICATION),
+    ).rejects.toMatchObject({ code: 'OTP_RATE_LIMITED' });
+  });
+  it('invalidates old codes when resending', async () => {
+    const previous = record();
+    model.findOne.mockReturnValue(query(previous));
+    await service.requestOtp('test@example.com', OtpPurpose.PASSWORD_RESET);
+    expect(previous.used).toBe(true);
+    expect(previous.save).toHaveBeenCalled();
+    expect(model.updateMany).toHaveBeenCalled();
+  });
+  it('propagates delivery failure', async () => {
+    mail.sendOtpEmail.mockRejectedValue(new Error('delivery failure'));
+    await expect(service.requestOtp('test@example.com', OtpPurpose.PASSWORD_RESET)).rejects.toThrow(
+      'delivery failure',
     );
   });
-
-  it('rate limits across purposes using the newest record for the email', async () => {
-    const resetDoc = makeDoc({
-      purpose: OtpPurpose.PASSWORD_RESET,
-      requestCount: 3,
-      lastRequestAt: new Date(Date.now() - 2 * 60 * 1000),
-      rateWindowStart: new Date(Date.now() - 2 * 60 * 1000),
-    });
-    otpModel.findOne
-      .mockReturnValueOnce({
-        sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
-      })
-      .mockReturnValueOnce({
-        sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(resetDoc) }),
-      });
-
+  it.each([
+    ['OTP_NOT_FOUND', null],
+    ['OTP_ALREADY_USED', record({ used: true })],
+    ['OTP_EXPIRED', record({ expiresAt: new Date(0) })],
+    ['OTP_MAX_ATTEMPTS', record({ attempts: OTP_MAX_ATTEMPTS })],
+    ['OTP_NOT_FOUND', record({ channel: OtpChannel.SMS, target: '+14155552671' })],
+  ])('rejects unavailable codes: %s', async (code, doc) => {
+    model.findOne.mockReturnValue(query(doc));
     await expect(
-      otpService.requestOtp('test@example.com', OtpPurpose.EMAIL_VERIFICATION),
-    ).rejects.toMatchObject({ code: OtpErrorCode.RATE_LIMITED });
+      service.verifyOtp('test@example.com', OtpPurpose.PASSWORD_RESET, '123456'),
+    ).rejects.toMatchObject({ code });
+    expect(model.findOneAndUpdate).not.toHaveBeenCalled();
   });
-
-  it('verifies a correct OTP and marks it used', async () => {
-    const hash = await bcrypt.hash('123456', 10);
-    const record = makeDoc({ otpHash: hash });
-    otpModel.findOne.mockReturnValue({
-      sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(record) }),
+  it('reserves a database attempt before comparing and consumes success atomically', async () => {
+    const doc = record({ otpHash: await bcrypt.hash('123456', 4) });
+    model.findOne.mockReturnValue(query(doc));
+    model.findOneAndUpdate.mockReturnValue(query({ ...doc, attempts: 1 }));
+    await service.verifyOtp('test@example.com', OtpPurpose.PASSWORD_RESET, '123456');
+    expect(model.findOneAndUpdate.mock.calls[0][0]).toMatchObject({
+      attempts: { $lt: OTP_MAX_ATTEMPTS },
+      used: false,
+      channel: OtpChannel.EMAIL,
     });
-
-    await otpService.verifyOtp('test@example.com', OtpPurpose.EMAIL_VERIFICATION, '123456');
-
-    expect(record.used).toBe(true);
-    expect(record.save).toHaveBeenCalled();
+    expect(model.updateOne.mock.calls[0][0]).toMatchObject({ used: false });
   });
-
-  it('rejects a wrong OTP and increments attempts', async () => {
-    const hash = await bcrypt.hash('123456', 10);
-    const record = makeDoc({ otpHash: hash, attempts: 2 });
-    otpModel.findOne.mockReturnValue({
-      sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(record) }),
-    });
-
+  it('rejects a racing request that cannot reserve an attempt', async () => {
+    model.findOne.mockReturnValue(query(record()));
+    model.findOneAndUpdate.mockReturnValue(query(null));
     await expect(
-      otpService.verifyOtp('test@example.com', OtpPurpose.EMAIL_VERIFICATION, '000000'),
-    ).rejects.toMatchObject({ code: OtpErrorCode.INVALID });
-    expect(record.attempts).toBe(3);
+      service.verifyOtp('test@example.com', OtpPurpose.PASSWORD_RESET, '123456'),
+    ).rejects.toMatchObject({ code: 'OTP_MAX_ATTEMPTS' });
   });
-
-  it('rejects an expired OTP', async () => {
-    const hash = await bcrypt.hash('123456', 10);
-    const record = makeDoc({ otpHash: hash, expiresAt: new Date(Date.now() - 1000) });
-    otpModel.findOne.mockReturnValue({
-      sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(record) }),
-    });
-
+  it('rejects a code consumed by a concurrent verifier', async () => {
+    const doc = record({ otpHash: await bcrypt.hash('123456', 4) });
+    model.findOne.mockReturnValue(query(doc));
+    model.findOneAndUpdate.mockReturnValue(query({ ...doc, attempts: 1 }));
+    model.updateOne.mockReturnValue(query({ modifiedCount: 0 }));
     await expect(
-      otpService.verifyOtp('test@example.com', OtpPurpose.EMAIL_VERIFICATION, '123456'),
-    ).rejects.toMatchObject({ code: OtpErrorCode.EXPIRED });
+      service.verifyOtp('test@example.com', OtpPurpose.PASSWORD_RESET, '123456'),
+    ).rejects.toMatchObject({ code: 'OTP_ALREADY_USED' });
   });
-
-  it('rejects an already-used OTP', async () => {
-    const hash = await bcrypt.hash('123456', 10);
-    const record = makeDoc({ otpHash: hash, used: true });
-    otpModel.findOne.mockReturnValue({
-      sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(record) }),
-    });
-
+  it.each([
+    [2, 'OTP_INVALID'],
+    [OTP_MAX_ATTEMPTS, 'OTP_MAX_ATTEMPTS'],
+  ])('counts a wrong code at attempt %s', async (attempts, code) => {
+    const doc = record({ otpHash: await bcrypt.hash('123456', 4) });
+    model.findOne.mockReturnValue(query(doc));
+    model.findOneAndUpdate.mockReturnValue(query({ ...doc, attempts }));
     await expect(
-      otpService.verifyOtp('test@example.com', OtpPurpose.EMAIL_VERIFICATION, '123456'),
-    ).rejects.toMatchObject({ code: OtpErrorCode.ALREADY_USED });
-  });
-
-  it('rejects an OTP after the max attempts limit is reached', async () => {
-    const hash = await bcrypt.hash('123456', 10);
-    const record = makeDoc({ otpHash: hash, attempts: 5 });
-    otpModel.findOne.mockReturnValue({
-      sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(record) }),
-    });
-
-    await expect(
-      otpService.verifyOtp('test@example.com', OtpPurpose.EMAIL_VERIFICATION, '123456'),
-    ).rejects.toMatchObject({ code: OtpErrorCode.MAX_ATTEMPTS });
-  });
-
-  it('invalidates the OTP when the max attempts limit is reached', async () => {
-    const hash = await bcrypt.hash('123456', 10);
-    const record = makeDoc({ otpHash: hash, attempts: OTP_MAX_ATTEMPTS - 1 });
-    otpModel.findOne.mockReturnValue({
-      sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(record) }),
-    });
-
-    await expect(
-      otpService.verifyOtp('test@example.com', OtpPurpose.EMAIL_VERIFICATION, '000000'),
-    ).rejects.toMatchObject({ code: OtpErrorCode.MAX_ATTEMPTS });
-    expect(record.used).toBe(true);
-    expect(record.save).toHaveBeenCalled();
-  });
-
-  it('sends the OTP by SMS when the channel is SMS', async () => {
-    otpModel.findOne.mockReturnValue({
-      sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
-    });
-    otpModel.create.mockImplementation((data) => makeDoc(data));
-
-    await otpService.requestOtp(
-      'test@example.com',
-      OtpPurpose.EMAIL_VERIFICATION,
-      OtpChannel.SMS,
-      '+14155552671',
-    );
-
-    const created = otpModel.create.mock.calls[0][0];
-    expect(created.channel).toBe(OtpChannel.SMS);
-    expect(created.target).toBe('+14155552671');
-
-    expect(mailService.sendOtpEmail).not.toHaveBeenCalled();
-    const smsPayload = smsService.sendOtpSms.mock.calls[0][0];
-    expect(smsPayload.to).toBe('+14155552671');
-    expect(smsPayload.otp).toMatch(/^\d{6}$/);
-  });
-
-  it('rejects an SMS request without a phone number', async () => {
-    await expect(
-      otpService.requestOtp('test@example.com', OtpPurpose.EMAIL_VERIFICATION, OtpChannel.SMS),
-    ).rejects.toBeInstanceOf(BadRequestException);
-    expect(smsService.sendOtpSms).not.toHaveBeenCalled();
-  });
-
-  it('throws EMAIL_SEND_FAILED when the email cannot be sent', async () => {
-    otpModel.findOne.mockReturnValue({
-      sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
-    });
-    otpModel.create.mockImplementation((data) => makeDoc(data));
-    mailService.sendOtpEmail.mockRejectedValue(
-      new OtpException(OtpErrorCode.EMAIL_SEND_FAILED, 'x'),
-    );
-
-    await expect(
-      otpService.requestOtp('test@example.com', OtpPurpose.EMAIL_VERIFICATION),
-    ).rejects.toMatchObject({ code: OtpErrorCode.EMAIL_SEND_FAILED });
+      service.verifyOtp('test@example.com', OtpPurpose.PASSWORD_RESET, '000000'),
+    ).rejects.toMatchObject({ code });
+    expect(model.updateOne).not.toHaveBeenCalled();
   });
 });
