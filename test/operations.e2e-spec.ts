@@ -109,6 +109,47 @@ describe('Car-wash operations with HTTP and temporary MongoDB', () => {
     await second!.save();
     expect((await bookings.findById(bookingId).exec())!.status).toBe('COMPLETED');
   });
+  it('returns one HTTP409 when customer cancellation races admin completion', async () => {
+    const bookingId = await fixture({ __v: 0 });
+    let arrived = 0;
+    let release!: () => void;
+    const barrier = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const original = bookings.findOne.bind(bookings);
+    const spy = jest.spyOn(bookings, 'findOne').mockImplementation((filter, ...args) => {
+      const query = original(filter, ...args);
+      if (String((filter as { _id?: unknown })._id) === bookingId) {
+        const exec = query.exec.bind(query);
+        query.exec = async () => {
+          const document = await exec();
+          if (++arrived <= 2) {
+            if (arrived === 2) release();
+            await barrier;
+          }
+          return document;
+        };
+      }
+      return query;
+    });
+    try {
+      const results = await Promise.all([
+        http()
+          .patch('/admin/bookings/' + bookingId + '/status')
+          .auth(adminToken, { type: 'bearer' })
+          .send({ status: 'COMPLETED' }),
+        http()
+          .post('/bookings/' + bookingId + '/cancel')
+          .auth(customerToken, { type: 'bearer' }),
+      ]);
+      expect(results.map((result) => result.status).sort()).toEqual([200, 409]);
+      expect(results.find((result) => result.status === 409)!.body.message).toContain(
+        'Booking changed',
+      );
+    } finally {
+      spy.mockRestore();
+    }
+  });
   async function fixture(overrides: Record<string, unknown> = {}) {
     const record = {
       _id: id(),
