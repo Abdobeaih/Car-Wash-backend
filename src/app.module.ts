@@ -1,3 +1,4 @@
+import { EnrollmentsModule } from './plans/enrollments.module';
 import { createConnection } from 'node:net';
 import { Logger, Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
@@ -115,6 +116,7 @@ function isMongoListening(uri: string): Promise<boolean> {
     AddOnsModule,
     VehiclesModule,
     BookingsModule,
+    EnrollmentsModule,
     AdminModule,
     NotificationsModule,
     ContactModule,

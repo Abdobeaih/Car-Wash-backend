@@ -5,6 +5,7 @@ import { BookingStatus } from '../../bookings/schemas/booking.schema';
 export type NotificationDocument = HydratedDocument<Notification>;
 
 export enum NotificationType {
+  PLAN_EXPIRY = 'PLAN_EXPIRY',
   BOOKING_STATUS = 'BOOKING_STATUS',
   CONTACT_MESSAGE = 'CONTACT_MESSAGE',
 }

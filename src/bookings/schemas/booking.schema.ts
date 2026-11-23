@@ -82,6 +82,13 @@ export class Booking {
   @Prop({ required: true })
   duration: number;
 
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'Enrollment' })
+  enrollmentId?: string;
+
+  @Prop()
+  redemptionKey?: string;
+  @Prop() requestFingerprint?: string;
+
   // Server-derived minute keys. Never accepted from a client or backfilled over old data.
   @Prop({ type: [String], select: false, default: undefined })
   occupiedMinutes?: string[];
@@ -181,13 +188,15 @@ BookingSchema.pre('save', async function () {
   this.occupiedMinutes = Array.from({ length: end - start }, (_, i) => `${this.date}:${start + i}`);
   // Legacy active bookings have no minute keys. Keep the original overlap check
   // for them, including when an admin restores a cancelled booking.
-  const conflict = await model.exists({
+  const conflictQuery = model.exists({
     _id: { $ne: this._id },
     date: this.date,
     status: { $ne: BookingStatus.CANCELLED },
     startTime: { $lt: this.endTime },
     endTime: { $gt: this.startTime },
   });
+  const session = this.$session();
+  const conflict = await (session ? conflictQuery.session(session) : conflictQuery);
   if (conflict) throw new ConflictException('This time slot is no longer available.');
 });
 BookingSchema.post(
