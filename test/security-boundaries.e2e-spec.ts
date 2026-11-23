@@ -337,6 +337,7 @@ describe('Security boundaries (real HTTP, JWT and temporary MongoDB)', () => {
       .send(body)
       .expect(201);
     expect(booking.body.total).toBe(svc.basePrice);
+    expect(booking.body).not.toHaveProperty('occupiedMinutes');
     await http()
       .get('/bookings/' + booking.body._id)
       .auth(b.token, { type: 'bearer' })
@@ -513,6 +514,98 @@ describe('Security boundaries (real HTTP, JWT and temporary MongoDB)', () => {
     await expect(
       bookings.collection.insertOne({ ...legacy, occupiedMinutes: current!.occupiedMinutes }),
     ).rejects.toMatchObject({ code: 11000 });
+  });
+  it('reserves the final partial minute of fractional-duration bookings atomically', async () => {
+    const bookings = app.get<Model<BookingDocument>>(getModelToken('Booking'));
+    const template = await bookings.findOne({ date: '2035-06-12' }).lean();
+    const base = Object.fromEntries(
+      Object.entries(template!).filter(
+        ([key]) => !['_id', 'createdAt', 'updatedAt', '__v'].includes(key),
+      ),
+    );
+    let arrived = 0;
+    let release!: () => void;
+    const barrier = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const original = bookings.exists.bind(bookings);
+    const spy = jest.spyOn(bookings, 'exists').mockImplementation((filter) => {
+      const query = original(filter);
+      if ((filter as unknown as { date?: string })?.date === '2035-06-15') {
+        const exec = query.exec.bind(query);
+        query.exec = async () => {
+          const found = await exec();
+          if (++arrived === 2) release();
+          await barrier;
+          return found;
+        };
+      }
+      return query;
+    });
+    try {
+      const results = await Promise.allSettled([
+        bookings.create({
+          ...base,
+          date: '2035-06-15',
+          startTime: '09:00',
+          endTime: '09:30.5',
+          duration: 30.5,
+        }),
+        bookings.create({
+          ...base,
+          date: '2035-06-15',
+          startTime: '09:30',
+          endTime: '10:00',
+          duration: 30,
+        }),
+      ]);
+      expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+      expect(results.filter((r) => r.status === 'rejected')).toHaveLength(1);
+      const rejected = results.find((r) => r.status === 'rejected') as PromiseRejectedResult;
+      expect(rejected.reason.getStatus()).toBe(409);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+  it('allows status-only updates of overlapping legacy records without rewriting their reservations', async () => {
+    const bookings = app.get<Model<BookingDocument>>(getModelToken('Booking'));
+    const template = await bookings.findOne({ date: '2035-06-12' }).lean();
+    const base = Object.fromEntries(
+      Object.entries(template!).filter(
+        ([key]) => !['_id', 'createdAt', 'updatedAt', '__v'].includes(key),
+      ),
+    );
+    const legacy = {
+      ...base,
+      date: '2035-06-16',
+      startTime: '09:00',
+      endTime: '10:00',
+      duration: 60,
+    };
+    const first = await bookings.collection.insertOne({ ...legacy });
+    await bookings.collection.insertOne({ ...legacy, startTime: '09:30', endTime: '10:30' });
+    const admin = await account(UserRole.ADMIN);
+    const updated = await http()
+      .patch('/admin/bookings/' + first.insertedId.toString() + '/status')
+      .auth(admin.token, { type: 'bearer' })
+      .send({ status: 'COMPLETED' })
+      .expect(200);
+    expect(updated.body).not.toHaveProperty('occupiedMinutes');
+    expect(await bookings.collection.findOne({ _id: first.insertedId })).not.toHaveProperty(
+      'occupiedMinutes',
+    );
+  });
+  it('omits reservation keys from new, cancelled and restored document JSON', async () => {
+    const bookings = app.get<Model<BookingDocument>>(getModelToken('Booking'));
+    const stored = await bookings.findOne({ date: '2035-06-12' }).select('+occupiedMinutes');
+    expect(stored!.occupiedMinutes?.length).toBeGreaterThan(0);
+    expect(stored!.toJSON()).not.toHaveProperty('occupiedMinutes');
+    stored!.status = BookingStatus.CANCELLED;
+    await stored!.save();
+    expect(stored!.toJSON()).not.toHaveProperty('occupiedMinutes');
+    stored!.status = BookingStatus.CONFIRMED;
+    await stored!.save();
+    expect(stored!.toJSON()).not.toHaveProperty('occupiedMinutes');
   });
   it('sends only one email when concurrent requests race the resend cooldown', async () => {
     const a = await account();
