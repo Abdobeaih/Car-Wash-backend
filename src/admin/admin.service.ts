@@ -181,6 +181,8 @@ export class AdminService {
   async recordPayment(id: string, dto: RecordPaymentDto, recordedBy: string) {
     const booking = await this.bookingModel.findById(id).exec();
     if (!booking) throw new NotFoundException('Booking not found.');
+    if (booking.enrollmentId)
+      throw new BadRequestException('Plan visits have no separate payment record.');
     if (booking.paymentStatus === dto.paymentStatus) return this.getBooking(id);
     if (booking.status === BookingStatus.CANCELLED) {
       throw new BadRequestException(
@@ -334,6 +336,16 @@ export class AdminService {
     if (!booking) {
       throw new NotFoundException('Booking not found.');
     }
+    if (
+      booking.enrollmentId &&
+      booking.status === BookingStatus.CANCELLED &&
+      dto.status !== BookingStatus.CANCELLED
+    )
+      throw new BadRequestException(
+        'Cancelled plan visits cannot be restored. Book a new visit through the plan.',
+      );
+    if (booking.enrollmentId && dto.status === BookingStatus.CANCELLED)
+      throw new BadRequestException('Use the plan visit cancellation workflow.');
     const previousStatus = booking.status;
     booking.status = dto.status;
     const saved = await booking.save();

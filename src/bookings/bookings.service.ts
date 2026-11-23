@@ -7,7 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, ClientSession } from 'mongoose';
 import { Vehicle } from '../vehicles/schemas/vehicle.schema';
 import { CarService } from '../services/schemas/service.schema';
 import { AddOn } from '../addons/schemas/addon.schema';
@@ -28,7 +28,16 @@ export class BookingsService {
     private readonly notificationsService: NotificationsService,
   ) {}
 
-  async create(customerId: string, dto: CreateBookingDto): Promise<BookingDocument> {
+  async create(
+    customerId: string,
+    dto: CreateBookingDto,
+    coverage?: {
+      session: ClientSession;
+      enrollmentId: string;
+      redemptionKey: string;
+      requestFingerprint: string;
+    },
+  ): Promise<BookingDocument> {
     const vehicle = await this.vehicleModel
       .findOne({ _id: dto.vehicleId, userId: customerId })
       .exec();
@@ -83,13 +92,14 @@ export class BookingsService {
       throw new BadRequestException('The requested time is outside working hours.');
     }
 
-    const conflicts = await this.bookingModel
-      .findOne({
-        date: dto.date,
-        status: { $ne: BookingStatus.CANCELLED },
-        $or: [{ startTime: { $lt: endTime }, endTime: { $gt: dto.startTime } }],
-      })
-      .exec();
+    const conflictQuery = this.bookingModel.findOne({
+      date: dto.date,
+      status: { $ne: BookingStatus.CANCELLED },
+      $or: [{ startTime: { $lt: endTime }, endTime: { $gt: dto.startTime } }],
+    });
+    const conflicts = await (
+      coverage ? conflictQuery.session(coverage.session) : conflictQuery
+    ).exec();
 
     if (conflicts) {
       throw new ConflictException('This time slot is no longer available.');
@@ -108,22 +118,30 @@ export class BookingsService {
         serviceId,
         addOnIds,
         duration,
-        subtotal,
+        subtotal: coverage ? 0 : subtotal,
       })),
       date: dto.date,
       startTime: dto.startTime,
       endTime,
       duration: totalDuration,
-      subtotal,
-      total,
+      subtotal: coverage ? 0 : subtotal,
+      total: coverage ? 0 : total,
+      ...(coverage
+        ? {
+            enrollmentId: coverage.enrollmentId,
+            redemptionKey: coverage.redemptionKey,
+            requestFingerprint: coverage.requestFingerprint,
+          }
+        : {}),
       status: BookingStatus.PENDING,
-      paymentStatus: 'PENDING',
+      paymentStatus: coverage ? 'PAID' : 'PENDING',
       location: dto.location,
     });
 
-    const saved = await created.save();
+    const saved = await created.save(coverage ? { session: coverage.session } : undefined);
     const populated = await this.populateBooking(saved);
-    await this.safeNotify(() => this.notificationsService.notifyAdminsOfNewBooking(populated));
+    if (!coverage)
+      await this.safeNotify(() => this.notificationsService.notifyAdminsOfNewBooking(populated));
     return populated;
   }
 
@@ -150,6 +168,11 @@ export class BookingsService {
     const booking = await this.bookingModel.findOne({ _id: id, customerId }).exec();
     if (!booking) {
       throw new NotFoundException('Booking not found.');
+    }
+    if (booking.enrollmentId) {
+      throw new BadRequestException(
+        'Plan visits must be cancelled through the plan visit workflow.',
+      );
     }
     if (booking.status === BookingStatus.COMPLETED) {
       throw new ForbiddenException('Completed bookings cannot be cancelled.');
