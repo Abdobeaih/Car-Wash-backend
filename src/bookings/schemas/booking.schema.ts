@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, SchemaTypes, Model } from 'mongoose';
+import { HydratedDocument, SchemaTypes, Model, Error as MongooseError } from 'mongoose';
 import { ConflictException } from '@nestjs/common';
 import { toMinutes } from '../working-hours.util';
 
@@ -53,7 +53,7 @@ export class BookingServiceItem {
   subtotal: number;
 }
 
-@Schema({ timestamps: true })
+@Schema({ timestamps: true, optimisticConcurrency: true })
 export class Booking {
   @Prop({ required: true, type: SchemaTypes.ObjectId, ref: 'User', index: true })
   customerId: string;
@@ -152,6 +152,16 @@ BookingSchema.set('toJSON', {
 });
 BookingSchema.pre('save', async function () {
   const model = this.constructor as Model<Booking>;
+  // Older imported bookings may have no version field. Initialize it once so
+  // optimistic concurrency also protects two editors of those records.
+  if (!this.isNew && this.get('__v') === undefined) {
+    await model.collection.updateOne(
+      { _id: this._id, __v: { $exists: false } },
+      { $set: { __v: 0 } },
+    );
+    this.set('__v', 0);
+    this.unmarkModified('__v');
+  }
   // Do not accept a booking before MongoDB has confirmed its enforcing index.
   await model.init();
   if (this.status === BookingStatus.CANCELLED) {
@@ -187,6 +197,11 @@ BookingSchema.post(
     _document: BookingDocument,
     next: (error?: Error) => void,
   ) {
+    if (error instanceof MongooseError.VersionError) {
+      return next(
+        new ConflictException('Booking changed while you were editing. Reload and try again.'),
+      );
+    }
     if (error?.code === 11000 && error?.keyPattern?.occupiedMinutes) {
       return next(new ConflictException('This time slot is no longer available.'));
     }
