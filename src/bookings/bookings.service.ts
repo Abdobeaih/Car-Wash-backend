@@ -165,13 +165,24 @@ export class BookingsService {
   }
 
   private validateDate(date: string): void {
-    const parsed = new Date(`${date}T00:00:00`);
-    if (Number.isNaN(parsed.getTime())) {
+    const parsed = new Date(`${date}T00:00:00Z`);
+    if (
+      !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+      Number.isNaN(parsed.getTime()) ||
+      parsed.toISOString().slice(0, 10) !== date
+    ) {
       throw new BadRequestException('Invalid date.');
     }
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (parsed.getTime() < today.getTime()) {
+    // Bookings use the service's Cairo calendar, not the server's UTC day.
+    const parts = new Intl.DateTimeFormat('en', {
+      timeZone: 'Africa/Cairo',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(new Date());
+    const part = (type: string) => parts.find((value) => value.type === type)!.value;
+    const today = `${part('year')}-${part('month')}-${part('day')}`;
+    if (date < today) {
       throw new BadRequestException('Booking date cannot be in the past.');
     }
   }
