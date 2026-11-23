@@ -142,7 +142,11 @@ describe('Car-wash operations with HTTP and temporary MongoDB', () => {
           .post('/bookings/' + bookingId + '/cancel')
           .auth(customerToken, { type: 'bearer' }),
       ]);
-      expect(results.map((result) => result.status).sort()).toEqual([200, 409]);
+      expect(results.filter((result) => result.status === 409)).toHaveLength(1);
+      // PATCH succeeds with 200, POST cancellation with Nest's default 201.
+      // Either may win the synchronized race; the other must conflict.
+      expect([200, 409]).toContain(results[0].status);
+      expect([201, 409]).toContain(results[1].status);
       expect(results.find((result) => result.status === 409)!.body.message).toContain(
         'Booking changed',
       );

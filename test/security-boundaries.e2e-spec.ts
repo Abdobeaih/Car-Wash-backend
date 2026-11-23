@@ -616,4 +616,36 @@ describe('Security boundaries (real HTTP, JWT and temporary MongoDB)', () => {
     expect(outcomes.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
     expect(await app.get(getModelToken('Otp')).countDocuments({ email: a.email })).toBe(1);
   });
+  it('returns a clear client error when two registrations race for one email', async () => {
+    const email = 'concurrent-registration@example.com';
+    const find = users.findByEmail.bind(users);
+    let arrivals = 0;
+    let release!: () => void;
+    const barrier = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const spy = jest.spyOn(users, 'findByEmail').mockImplementation(async (value) => {
+      const result = await find(value);
+      if (value === email && result === null) {
+        arrivals += 1;
+        if (arrivals === 2) release();
+        await barrier;
+      }
+      return result;
+    });
+    try {
+      const payload = { name: 'Race fixture', email, password: PASSWORD };
+      const responses = await Promise.all([
+        http().post('/auth/register').send(payload),
+        http().post('/auth/register').send(payload),
+      ]);
+      expect(responses.map((response) => response.status).sort()).toEqual([201, 400]);
+      expect(responses.find((response) => response.status === 400)?.body.message).toBe(
+        'An account with this email already exists.',
+      );
+      expect(await model.countDocuments({ email })).toBe(1);
+    } finally {
+      spy.mockRestore();
+    }
+  });
 });
