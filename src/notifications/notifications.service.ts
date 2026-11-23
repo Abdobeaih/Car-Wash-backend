@@ -117,7 +117,7 @@ export class NotificationsService {
     await this.notifyAdmins(admins, {
       type: NotificationType.BOOKING_STATUS,
       title: 'New booking request',
-      message: `${customerName} requested a ${serviceName} for ${vehicleName} on ${when}. Total: $${booking.total}.`,
+      message: `${customerName} requested a ${serviceName} for ${vehicleName} on ${when}. Total: EGP ${booking.total}.`,
       data: {
         bookingId: this.idOf(booking),
         status: BookingStatus.PENDING,
@@ -194,7 +194,7 @@ export class NotificationsService {
       case BookingStatus.COMPLETED:
         return {
           title: 'Appointment completed',
-          message: `Your ${serviceName} appointment for ${vehicleName} on ${when} has been completed. Total: $${booking.total}.`,
+          message: `Your ${serviceName} appointment for ${vehicleName} on ${when} has been completed. Total: EGP ${booking.total}.`,
         };
       case BookingStatus.CANCELLED:
         return extras.actor
