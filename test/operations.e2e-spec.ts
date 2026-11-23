@@ -86,6 +86,29 @@ describe('Car-wash operations with HTTP and temporary MongoDB', () => {
   beforeEach(async () => {
     await bookings.deleteMany({});
   });
+  it.each([false, true])(
+    'rejects stale status writes (version already present: %s)',
+    async (versioned) => {
+      const bookingId = await fixture(versioned ? { __v: 0 } : {});
+      const completing = await bookings.findById(bookingId).exec();
+      const cancelling = await bookings.findById(bookingId).exec();
+      completing!.status = 'COMPLETED' as BookingDocument['status'];
+      cancelling!.status = 'CANCELLED' as BookingDocument['status'];
+      await completing!.save();
+      await expect(cancelling!.save()).rejects.toMatchObject({ status: 409 });
+      expect((await bookings.findById(bookingId).exec())!.status).toBe('COMPLETED');
+    },
+  );
+  it('permits sequential status edits after reloading the latest version', async () => {
+    const bookingId = await fixture();
+    const first = await bookings.findById(bookingId).exec();
+    first!.status = 'CONFIRMED' as BookingDocument['status'];
+    await first!.save();
+    const second = await bookings.findById(bookingId).exec();
+    second!.status = 'COMPLETED' as BookingDocument['status'];
+    await second!.save();
+    expect((await bookings.findById(bookingId).exec())!.status).toBe('COMPLETED');
+  });
   async function fixture(overrides: Record<string, unknown> = {}) {
     const record = {
       _id: id(),
