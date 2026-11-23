@@ -233,7 +233,11 @@ export class AdminService {
   async createService(dto: CreateServiceDto) {
     const slug = dto.slug ?? slugify(dto.name);
     const created = new this.serviceModel({ ...dto, slug });
-    return created.save();
+    try {
+      return await created.save();
+    } catch (error) {
+      this.rethrowServiceConflict(error);
+    }
   }
 
   async updateService(id: string, dto: UpdateServiceDto) {
@@ -245,7 +249,20 @@ export class AdminService {
       Object.entries(dto).filter(([, value]) => value !== undefined),
     );
     Object.assign(existing, patch);
-    return existing.save();
+    try {
+      return await existing.save();
+    } catch (error) {
+      this.rethrowServiceConflict(error);
+    }
+  }
+
+  private rethrowServiceConflict(error: unknown): never {
+    if (typeof error === 'object' && error !== null && 'code' in error && error.code === 11000) {
+      throw new ConflictException(
+        'A service with this address already exists. Choose a different slug.',
+      );
+    }
+    throw error;
   }
 
   async deleteService(id: string): Promise<void> {

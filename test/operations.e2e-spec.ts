@@ -150,6 +150,37 @@ describe('Car-wash operations with HTTP and temporary MongoDB', () => {
       spy.mockRestore();
     }
   });
+  it('returns409 rather than500 when an admin creates a duplicate service slug', async () => {
+    await http()
+      .post('/admin/services')
+      .auth(adminToken, { type: 'bearer' })
+      .send({
+        name: 'Wash duplicate',
+        slug: 'wash',
+        description: 'Duplicate test service',
+        image: 'https://example.com/wash.webp',
+        basePrice: 100,
+        duration: 60,
+      })
+      .expect(409);
+  });
+  it('returns409 rather than500 when an admin renames a service to an existing slug', async () => {
+    const catalog = app.get<Model<ServiceDocument>>(getModelToken(CarService.name));
+    const other = await catalog.create({
+      name: 'Other',
+      slug: 'other-race-test',
+      description: 'Fixture service',
+      image: 'https://example.com/wash.webp',
+      basePrice: 100,
+      duration: 60,
+      isActive: true,
+    });
+    await http()
+      .patch('/admin/services/' + other._id)
+      .auth(adminToken, { type: 'bearer' })
+      .send({ slug: 'wash' })
+      .expect(409);
+  });
   async function fixture(overrides: Record<string, unknown> = {}) {
     const record = {
       _id: id(),
