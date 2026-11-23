@@ -42,8 +42,17 @@ export class UsersService {
       verificationChannel: data.verificationChannel ?? OtpChannel.EMAIL,
       role: data.role ?? UserRole.CUSTOMER,
     });
-    const saved = await created.save();
-    return this.toSafeUser(saved);
+    try {
+      const saved = await created.save();
+      return this.toSafeUser(saved);
+    } catch (error) {
+      // The pre-registration lookup cannot prevent two simultaneous requests
+      // from reaching the unique email index. Preserve the normal client error.
+      if (typeof error === 'object' && error !== null && 'code' in error && error.code === 11000) {
+        throw new BadRequestException('An account with this email already exists.');
+      }
+      throw error;
+    }
   }
 
   async findByEmail(email: string): Promise<UserDocument | null> {
