@@ -98,6 +98,27 @@ export class Booking {
   @Prop({ required: true, enum: PaymentStatus, default: PaymentStatus.PENDING, type: String })
   paymentStatus: PaymentStatus;
 
+  // Manual bookkeeping only, not a payment processor or refund confirmation.
+  @Prop({
+    type: [
+      {
+        _id: false,
+        status: { type: String, enum: PaymentStatus },
+        recordedBy: { type: SchemaTypes.ObjectId, ref: 'User' },
+        recordedAt: Date,
+        reference: { type: String, maxlength: 200 },
+      },
+    ],
+    default: [],
+    select: false,
+  })
+  paymentHistory: {
+    status: PaymentStatus;
+    recordedBy: string;
+    recordedAt: Date;
+    reference?: string;
+  }[];
+
   @Prop({ required: true, type: BookingLocation })
   location: BookingLocation;
 }

@@ -16,6 +16,9 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from '../common/constants/roles';
 import { ParseMongoIdPipe } from '../common/pipes/parse-mongo-id.pipe';
+import { RecordPaymentDto } from './dto/record-payment.dto';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { RequestUser } from '../common/interfaces/request-user.interface';
 import { AdminService } from './admin.service';
 import { CreateServiceDto, UpdateServiceDto } from '../services/dto/service.dto';
 import { CreateAddOnDto, UpdateAddOnDto } from '../addons/dto/addon.dto';
@@ -30,6 +33,20 @@ export class AdminController {
   @Get('dashboard')
   getDashboard() {
     return this.adminService.getDashboard();
+  }
+
+  @Get('analytics')
+  getAnalytics(@Query('start') start?: string, @Query('end') end?: string) {
+    return this.adminService.getAnalytics(start, end);
+  }
+
+  @Patch('bookings/:id/payment')
+  recordPayment(
+    @Param('id', ParseMongoIdPipe) id: string,
+    @Body() dto: RecordPaymentDto,
+    @CurrentUser() user: RequestUser,
+  ) {
+    return this.adminService.recordPayment(id, dto, user.id);
   }
 
   @Get('calendar')

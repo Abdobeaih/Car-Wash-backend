@@ -1,4 +1,10 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { User, UserDocument } from '../users/schemas/user.schema';
@@ -10,6 +16,8 @@ import { CreateAddOnDto, UpdateAddOnDto } from '../addons/dto/addon.dto';
 import { UpdateBookingStatusDto } from './dto/update-booking-status.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 import { UserRole } from '../common/constants/roles';
+import { analyticsMoney, analyticsRange } from './analytics.util';
+import { RecordPaymentDto } from './dto/record-payment.dto';
 import { slugify } from '../common/utils/slugify';
 
 @Injectable()
@@ -25,28 +33,180 @@ export class AdminService {
   ) {}
 
   async getDashboard() {
-    const [totalBookings, pending, confirmed, completed, customers, revenueAgg] = await Promise.all(
-      [
-        this.bookingModel.countDocuments(),
-        this.bookingModel.countDocuments({ status: BookingStatus.PENDING }),
-        this.bookingModel.countDocuments({ status: BookingStatus.CONFIRMED }),
-        this.bookingModel.countDocuments({ status: BookingStatus.COMPLETED }),
-        this.userModel.countDocuments({ role: UserRole.CUSTOMER }),
-        this.bookingModel.aggregate([
-          { $match: { status: { $nin: [BookingStatus.CANCELLED] } } },
-          { $group: { _id: null, total: { $sum: '$total' } } },
-        ]),
-      ],
-    );
-
+    const [counts, customers] = await Promise.all([
+      this.bookingModel.aggregate([
+        {
+          $group: {
+            _id: null,
+            totalBookings: { $sum: 1 },
+            pendingBookings: {
+              $sum: { $cond: [{ $eq: ['$status', BookingStatus.PENDING] }, 1, 0] },
+            },
+            confirmedBookings: {
+              $sum: { $cond: [{ $eq: ['$status', BookingStatus.CONFIRMED] }, 1, 0] },
+            },
+            completedBookings: {
+              $sum: { $cond: [{ $eq: ['$status', BookingStatus.COMPLETED] }, 1, 0] },
+            },
+            cancelledBookings: {
+              $sum: { $cond: [{ $eq: ['$status', BookingStatus.CANCELLED] }, 1, 0] },
+            },
+            revenue: { $sum: analyticsMoney.recordedPaid },
+            bookedValue: { $sum: analyticsMoney.bookedValue },
+            outstanding: { $sum: analyticsMoney.outstanding },
+          },
+        },
+      ]),
+      this.userModel.countDocuments({ role: UserRole.CUSTOMER }),
+    ]);
     return {
-      totalBookings,
-      pendingBookings: pending,
-      confirmedBookings: confirmed,
-      completedBookings: completed,
+      totalBookings: 0,
+      pendingBookings: 0,
+      confirmedBookings: 0,
+      completedBookings: 0,
+      cancelledBookings: 0,
+      revenue: 0,
+      bookedValue: 0,
+      outstanding: 0,
+      ...counts[0],
+      _id: undefined,
       customers,
-      revenue: revenueAgg.length > 0 ? revenueAgg[0].total : 0,
     };
+  }
+
+  async getAnalytics(start?: string, end?: string) {
+    const range = analyticsRange(start, end);
+    const moneyGroup = Object.fromEntries(
+      Object.entries(analyticsMoney).map(([key, value]) => [key, { $sum: value }]),
+    );
+    const [result] = await this.bookingModel.aggregate([
+      { $match: { date: { $gte: range.start, $lte: range.end } } },
+      {
+        $facet: {
+          summary: [
+            {
+              $group: {
+                _id: null,
+                bookings: { $sum: 1 },
+                ...moneyGroup,
+                completed: {
+                  $sum: { $cond: [{ $eq: ['$status', BookingStatus.COMPLETED] }, 1, 0] },
+                },
+                cancelled: {
+                  $sum: { $cond: [{ $eq: ['$status', BookingStatus.CANCELLED] }, 1, 0] },
+                },
+              },
+            },
+          ],
+          daily: [
+            { $group: { _id: '$date', bookings: { $sum: 1 }, ...moneyGroup } },
+            { $sort: { _id: 1 } },
+          ],
+          statuses: [{ $group: { _id: '$status', count: { $sum: 1 } } }],
+          services: [
+            { $match: { status: { $ne: BookingStatus.CANCELLED } } },
+            {
+              $project: {
+                items: {
+                  $cond: [
+                    { $gt: [{ $size: { $ifNull: ['$services', []] } }, 0] },
+                    '$services',
+                    [{ serviceId: '$serviceId', subtotal: '$subtotal' }],
+                  ],
+                },
+              },
+            },
+            { $unwind: '$items' },
+            {
+              $group: {
+                _id: '$items.serviceId',
+                count: { $sum: 1 },
+                baseValue: { $sum: '$items.subtotal' },
+              },
+            },
+            { $sort: { count: -1, _id: 1 } },
+            { $limit: 10 },
+            {
+              $lookup: {
+                from: this.serviceModel.collection.name,
+                localField: '_id',
+                foreignField: '_id',
+                as: 'catalog',
+              },
+            },
+            {
+              $project: {
+                _id: 1,
+                count: 1,
+                baseValue: 1,
+                name: { $ifNull: [{ $arrayElemAt: ['$catalog.name', 0] }, 'Archived service'] },
+              },
+            },
+          ],
+          customers: [
+            { $match: { status: { $ne: BookingStatus.CANCELLED } } },
+            { $group: { _id: '$customerId', count: { $sum: 1 } } },
+            {
+              $group: {
+                _id: null,
+                unique: { $sum: 1 },
+                returning: { $sum: { $cond: [{ $gt: ['$count', 1] }, 1, 0] } },
+              },
+            },
+          ],
+        },
+      },
+    ]);
+    return {
+      range,
+      summary: {
+        bookings: 0,
+        completed: 0,
+        cancelled: 0,
+        bookedValue: 0,
+        completedValue: 0,
+        recordedPaid: 0,
+        outstanding: 0,
+        cancelledPaid: 0,
+        ...result?.summary?.[0],
+        _id: undefined,
+      },
+      daily: result?.daily ?? [],
+      statuses: result?.statuses ?? [],
+      services: result?.services ?? [],
+      customers: { unique: 0, returning: 0, ...result?.customers?.[0], _id: undefined },
+    };
+  }
+
+  async recordPayment(id: string, dto: RecordPaymentDto, recordedBy: string) {
+    const booking = await this.bookingModel.findById(id).exec();
+    if (!booking) throw new NotFoundException('Booking not found.');
+    if (booking.paymentStatus === dto.paymentStatus) return this.getBooking(id);
+    if (booking.status === BookingStatus.CANCELLED) {
+      throw new BadRequestException(
+        'Cancelled bookings need separate refund reconciliation; payment records cannot be changed here.',
+      );
+    }
+    const updated = await this.bookingModel
+      .findOneAndUpdate(
+        { _id: id, paymentStatus: booking.paymentStatus, status: { $ne: BookingStatus.CANCELLED } },
+        {
+          $set: { paymentStatus: dto.paymentStatus },
+          $push: {
+            paymentHistory: {
+              status: dto.paymentStatus,
+              recordedBy,
+              recordedAt: new Date(),
+              reference: dto.reference?.trim(),
+            },
+          },
+        },
+        { returnDocument: 'after', runValidators: true },
+      )
+      .exec();
+    if (!updated)
+      throw new ConflictException('This booking changed. Refresh before recording payment.');
+    return this.getBooking(id);
   }
 
   async getCalendar(start?: string, end?: string) {
@@ -143,6 +303,7 @@ export class AdminService {
   async getBooking(id: string) {
     const booking = await this.bookingModel
       .findById(id)
+      .select('+paymentHistory')
       .populate('customerId vehicleId serviceId addOnIds services.serviceId services.addOnIds')
       .exec();
     if (!booking) {
@@ -164,6 +325,8 @@ export class AdminService {
       { path: 'vehicleId' },
       { path: 'serviceId' },
       { path: 'addOnIds' },
+      { path: 'services.serviceId' },
+      { path: 'services.addOnIds' },
     ]);
 
     if (previousStatus !== dto.status) {
