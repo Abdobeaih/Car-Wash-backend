@@ -1,4 +1,4 @@
-import { IsBoolean, IsNumber, IsOptional, IsString, Min, MinLength } from 'class-validator';
+import { IsBoolean, IsInt, IsNumber, IsOptional, IsString, Min, MinLength } from 'class-validator';
 import { IsImageUrl } from './is-image-url.validator';
 
 export class CreateServiceDto {
@@ -21,7 +21,7 @@ export class CreateServiceDto {
   @Min(0, { message: 'Price cannot be negative' })
   basePrice: number;
 
-  @IsNumber()
+  @IsInt()
   @Min(15, { message: 'Duration must be at least 15 minutes' })
   duration: number;
 
@@ -54,7 +54,7 @@ export class UpdateServiceDto {
   @IsOptional()
   basePrice?: number;
 
-  @IsNumber()
+  @IsInt()
   @Min(15)
   @IsOptional()
   duration?: number;
