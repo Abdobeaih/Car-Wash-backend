@@ -1,6 +1,14 @@
-# Mobile Car Care — Backend API
+# Mobile Car Care | Backend API
 
 The REST API behind **Mobile Car Care**, a platform for booking car care services at the customer's location. Front end: [Car-Wash-fronend](https://github.com/Abdobeaih/Car-Wash-fronend); combined overview and full documentation: [Car-Wash](https://github.com/Abdobeaih/Car-Wash).
+
+**Live frontend:** https://mobilecarcare.vercel.app
+
+## Management features
+
+- Admin booking management and date-filtered analytics
+- Payment status and amounts recorded manually by an admin, not an online payment gateway
+- OTP SMS integration is implemented with Twilio. It requires valid server-side Twilio configuration; source code alone does not confirm that live SMS delivery is enabled.
 
 ## Stack
 
